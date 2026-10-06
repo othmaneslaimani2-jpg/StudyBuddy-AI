@@ -19,19 +19,19 @@ exports.chatWithAI = async (req, res) => {
     });
     const queryVector = embeddingResponse.data[0].embedding;
 
-  
+
     const index = getPineconeIndex();
     const pineconeResults = await index.query({
       vector: queryVector,
-      topK: 3, 
+      topK: 3,
       includeMetadata: true,
-      filter: { userId: { $eq: userId } }, 
+      filter: { userId: { $eq: userId } },
     });
 
     let retrievedNotesContext = '';
     if (pineconeResults.matches && pineconeResults.matches.length > 0) {
       retrievedNotesContext = pineconeResults.matches
-        .filter((match) => match.score > 0.3) 
+        .filter((match) => match.score > 0.3)
         .map((match) => `[Document Title: ${match.metadata.title}]\n${match.metadata.textChunk}`)
         .join('\n\n');
     }

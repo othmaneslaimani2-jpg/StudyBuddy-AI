@@ -25,28 +25,28 @@ export const AuthProvider = ({ children }) => {
         checkToken();
     }, []);
 
-const login = async (email, password) => {
-    const response = await apiClient.post('/auth/login', { email, password});
-    const { token } = response.data;
-    await SecureStore.setItemAsync('userToken', token);
-    setUserToken(token);
-};
+    const login = async (email, password) => {
+        const response = await apiClient.post('/auth/login', { email, password });
+        const { token } = response.data;
+        await SecureStore.setItemAsync('userToken', token);
+        setUserToken(token);
+    };
 
-const register = async (name, email, password) => {
-    const response = await apiClient.post('/auth/register', { name, email, password });
-    const { token } = response.data;
-    await SecureStore.setItemAsync('userToken', token);
-    setUserToken(token);
-};
+    const register = async (name, email, password) => {
+        const response = await apiClient.post('/auth/register', { name, email, password });
+        const { token } = response.data;
+        await SecureStore.setItemAsync('userToken', token);
+        setUserToken(token);
+    };
 
-const logout = async () => {
-    await SecureStore.deleteItemAsync('userToken');
-    setUserToken(null);
-};
+    const logout = async () => {
+        await SecureStore.deleteItemAsync('userToken');
+        setUserToken(null);
+    };
 
-return (
-    <AuthContext.Provider value={{ userToken, isLoading, login, register, logout,}}>
-        {children}
-    </AuthContext.Provider>
-);
+    return (
+        <AuthContext.Provider value={{ userToken, isLoading, login, register, logout, }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };

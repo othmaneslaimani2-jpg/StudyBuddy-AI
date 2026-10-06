@@ -30,13 +30,13 @@ exports.createNote = async (req, res) => {
     const index = getPineconeIndex();
     await index.upsert([
       {
-        id: note.id, 
+        id: note.id,
         values: vectorValues,
         metadata: {
           userId,
           subjectId,
           title,
-          textChunk: content.substring(0, 1000), 
+          textChunk: content.substring(0, 1000),
         },
       },
     ]);
