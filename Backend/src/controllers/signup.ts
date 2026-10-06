@@ -1,8 +1,9 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { User } from '../models';
 
-const signup = async (req, res) => {
+export const signup = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -22,18 +23,18 @@ const signup = async (req, res) => {
       password: hashedPassword,
     });
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const jwtSecret = process.env.JWT_SECRET || 'secret';
+    const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'User registered successfully!',
       token,
       user: { id: user.id, email: user.email },
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error during registration.' });
+    return res.status(500).json({ error: 'Server error during registration.' });
   }
 };
 
-module.exports = signup;
-module.exports.signup = signup;
-module.exports.register = signup;
+export const register = signup;
+export default signup;

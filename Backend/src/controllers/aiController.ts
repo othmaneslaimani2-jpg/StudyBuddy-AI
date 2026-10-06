@@ -1,13 +1,20 @@
-const { OpenAI } = require('openai');
-const { Subject, Task } = require('../models');
-const { getPineconeIndex } = require('../config/pinecone');
+import { Response } from 'express';
+import { OpenAI } from 'openai';
+import type { ChatCompletionTool } from 'openai/resources/chat/completions';
+import { Subject, Task } from '../models';
+import { getPineconeIndex } from '../../config/pinecone';
+import { AuthRequest } from '../types';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-exports.chatWithAI = async (req, res) => {
+export const chatWithAI = async (req: AuthRequest, res: Response) => {
   try {
     const { message } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized.' });
+    }
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required.' });
@@ -18,7 +25,6 @@ exports.chatWithAI = async (req, res) => {
       input: message,
     });
     const queryVector = embeddingResponse.data[0].embedding;
-
 
     const index = getPineconeIndex();
     const pineconeResults = await index.query({
@@ -31,12 +37,15 @@ exports.chatWithAI = async (req, res) => {
     let retrievedNotesContext = '';
     if (pineconeResults.matches && pineconeResults.matches.length > 0) {
       retrievedNotesContext = pineconeResults.matches
-        .filter((match) => match.score > 0.3)
-        .map((match) => `[Document Title: ${match.metadata.title}]\n${match.metadata.textChunk}`)
+        .filter((match) => (match.score ?? 0) > 0.3)
+        .map((match) => {
+          const metadata = match.metadata as { title?: string; textChunk?: string } | undefined;
+          return `[Document Title: ${metadata?.title || 'Untitled'}]\n${metadata?.textChunk || ''}`;
+        })
         .join('\n\n');
     }
 
-    const tools = [
+    const tools: ChatCompletionTool[] = [
       {
         type: 'function',
         function: {
@@ -78,7 +87,7 @@ ${retrievedNotesContext ? retrievedNotesContext : 'No matching notes found for t
 
     if (responseMessage.tool_calls) {
       for (const toolCall of responseMessage.tool_calls) {
-        if (toolCall.function.name === 'create_study_task') {
+        if (toolCall.type === 'function' && toolCall.function.name === 'create_study_task') {
           const args = JSON.parse(toolCall.function.arguments);
 
           let [subject] = await Subject.findOrCreate({
@@ -104,6 +113,10 @@ ${retrievedNotesContext ? retrievedNotesContext : 'No matching notes found for t
     return res.json({ reply: responseMessage.content });
   } catch (error) {
     console.error('AI Chat Error:', error);
-    res.status(500).json({ error: 'Failed to process AI chat message.' });
+    return res.status(500).json({ error: 'Failed to process AI chat message.' });
   }
+};
+
+export default {
+  chatWithAI,
 };

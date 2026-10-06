@@ -1,8 +1,9 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { User } from '../models';
 
-const login = async (req, res) => {
+export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -20,17 +21,17 @@ const login = async (req, res) => {
       return res.status(400).json({ error: 'Invalid email or password.' });
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const jwtSecret = process.env.JWT_SECRET || 'secret';
+    const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
 
-    res.json({
+    return res.json({
       message: 'Login successful!',
       token,
       user: { id: user.id, email: user.email },
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error during login.' });
+    return res.status(500).json({ error: 'Server error during login.' });
   }
 };
 
-module.exports = login;
-module.exports.login = login;
+export default login;
