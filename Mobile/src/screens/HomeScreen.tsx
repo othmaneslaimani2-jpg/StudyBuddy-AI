@@ -2,11 +2,31 @@ import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import apiClient from '../api/client';
+import { HomeScreenNavigationProp } from '../types/navigation';
 
-export default function HomeScreen({ navigation }) {
+interface Subject {
+    id: string;
+    title: string;
+    color: string;
+}
+
+interface Task {
+    id: string;
+    title: string;
+    dueDate: string;
+    isCompleted?: boolean;
+    subjectId?: string;
+    Subject?: Subject;
+}
+
+interface Props {
+    navigation: HomeScreenNavigationProp;
+}
+
+export default function HomeScreen({ navigation }: Props) {
     const { logout } = useContext(AuthContext);
-    const [tasks, setTasks] = useState([]);
-    const [subjects, setSubjects] = useState([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [subjects, setSubjects] = useState<Subject[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -29,7 +49,7 @@ export default function HomeScreen({ navigation }) {
         }
     };
 
-    const renderTaskItem = ({ item }) => (
+    const renderTaskItem = ({ item }: { item: Task }) => (
         <View style={styles.taskCard}>
             <View style={[styles.colorBadge, { backgroundColor: item.Subject?.color || '#4F46E5' }]} />
             <View style={styles.taskInfo}>

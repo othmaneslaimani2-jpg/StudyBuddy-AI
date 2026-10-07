@@ -1,10 +1,10 @@
 import { Response } from 'express';
-import { OpenAI } from 'openai';
+import { GoogleGenAI } from '@google/genai';
 import { Note, Subject } from '../models';
 import { getPineconeIndex } from '../../config/pinecone';
 import { AuthRequest } from '../types';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const createNote = async (req: AuthRequest, res: Response) => {
   try {
@@ -26,11 +26,16 @@ export const createNote = async (req: AuthRequest, res: Response) => {
 
     const note = await Note.create({ title, content, subjectId });
 
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: `Title: ${title}\nContent: ${content}`,
+    const embeddingResponse = await ai.models.embedContent({
+      model: 'text-embedding-004',
+      contents: `Title: ${title}\nContent: ${content}`,
     });
-    const vectorValues = embeddingResponse.data[0].embedding;
+
+    const vectorValues = embeddingResponse.embeddings?.[0]?.values;
+
+    if (!vectorValues) {
+      throw new Error('Failed to generate embedding vector values.');
+    }
 
     const index = getPineconeIndex();
     await index.upsert({
@@ -48,9 +53,10 @@ export const createNote = async (req: AuthRequest, res: Response) => {
       ],
     });
 
-    return res.status(201).json({ message: 'Note saved and indexed in Pinecone successfully!', note });
+    return res.status(201).json({ message: 'Note saved and indexed using Gemini successfully!', note });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to save and index note.' });
+    console.error('Note Upload Error:', error);
+    return res.status(500).json({ error: 'Failed to save and vectorise note.' });
   }
 };
 
