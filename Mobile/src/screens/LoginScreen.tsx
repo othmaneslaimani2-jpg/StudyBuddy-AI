@@ -1,7 +1,11 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { LoginScreenNavigationProp } from '../types/navigation';
+import { CustomInput } from '../components/CustomInput';
+import { GradientButton } from '../components/GradientButton';
+import { AuthHeader } from '../components/AuthHeader';
+import Checkbox from 'expo-checkbox';
 
 interface Props {
   navigation: LoginScreenNavigationProp;
@@ -10,55 +14,65 @@ interface Props {
 export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const { login } = useContext(AuthContext);
 
   const handleLogin = async () => {
+    if (!email || !password) return Alert.alert('Validation Error', 'Please enter email and password');
+    setIsSubmitting(true);
     try {
       await login(email, password);
     } catch (error: any) {
       Alert.alert('Login Failed', error.response?.data?.error || 'Invalid credential');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome Back</Text>
-      <Text style={styles.subtitle}>Sign in to StudyBuddy AI</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <AuthHeader subtitle="Your AI-Powered Academic Assistant" />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email Address"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
+        <View style={styles.formContainer}>
+          <CustomInput 
+            icon="mail" placeholder="your@email.com" value={email} onChangeText={setEmail} 
+            autoCapitalize="none" keyboardType="email-address" 
+          />
+          <CustomInput 
+            icon="lock" placeholder="Password" value={password} onChangeText={setPassword} 
+            isPassword secureTextEntry={!showPassword} onToggleSecure={() => setShowPassword(!showPassword)} 
+          />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+          <View style={styles.optionsContainer}>
+            <Checkbox value={rememberMe} onValueChange={setRememberMe} color={rememberMe ? '#3B82F6' : undefined} style={styles.checkbox} />
+            <Text style={styles.checkboxText}>Remember me</Text>
+          </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Log In</Text>
-      </TouchableOpacity>
+          <GradientButton title="Sign In" onPress={handleLogin} isSubmitting={isSubmitting} />
+        </View>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-        <Text style={styles.linkText}>Don't have an account? Sign up</Text>
-      </TouchableOpacity>
+        <View style={styles.footerContainer}>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.footerText}>Don't have an account? <Text style={styles.footerLink}>Sign Up</Text></Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: 'center', backgroundColor: '#F9FAFB' },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#111827', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#6B7280', marginBottom: 32 },
-  input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 16 },
-  button: { backgroundColor: '#4F46E5', borderRadius: 10, padding: 16, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  linkText: { color: '#4F46E5', textAlign: 'center', marginTop: 20, fontSize: 14, fontWeight: '500' },
+  container: { flex: 1, backgroundColor: '#FCFCFF' },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 40 },
+  formContainer: { width: '100%' },
+  optionsContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 28, marginTop: 4 },
+  checkbox: { width: 22, height: 22, borderRadius: 5, marginRight: 12 },
+  checkboxText: { fontSize: 14, color: '#111827' },
+  footerContainer: { alignItems: 'center', marginTop: 'auto', paddingTop: 10 },
+  footerText: { fontSize: 14, color: '#6B7280' },
+  footerLink: { color: '#2563EB', fontWeight: '600' },
 });

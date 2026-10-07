@@ -1,70 +1,167 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { RegisterScreenNavigationProp } from '../types/navigation';
+import Checkbox from 'expo-checkbox';
+import { CustomInput } from '../components/CustomInput';
+import { GradientButton } from '../components/GradientButton';
+import { AuthHeader } from '../components/AuthHeader';
 
 interface Props {
   navigation: RegisterScreenNavigationProp;
 }
 
 export default function RegisterScreen({ navigation }: Props) {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agree, setAgree] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const { register } = useContext(AuthContext);
 
+  const updateForm = (key: keyof typeof form, value: string) => setForm(prev => ({ ...prev, [key]: value }));
+
   const handleRegister = async () => {
+    const { name, email, password, confirmPassword } = form;
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert('Validation Error', 'Please fill all fields');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Validation Error', 'Passwords do not match');
+      return;
+    }
+    if (!agree) {
+      Alert.alert('Validation Error', 'Please agree to the Terms of Service and Privacy Policy');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       await register(name, email, password);
     } catch (error: any) {
       Alert.alert('Registration Failed', error.response?.data?.error || 'Failed to create account');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create Account 🚀</Text>
-      <Text style={styles.subtitle}>Join StudyBuddy AI today</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        <AuthHeader subtitle="Create your account" />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Full Name"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+        <View style={styles.formContainer}>
+          <CustomInput 
+            icon="user" 
+            placeholder="Full Name" 
+            value={form.name} 
+            onChangeText={(t) => updateForm('name', t)} 
+          />
+          <CustomInput 
+            icon="mail" 
+            placeholder="your@email.com" 
+            value={form.email} 
+            onChangeText={(t) => updateForm('email', t)} 
+            autoCapitalize="none" 
+            keyboardType="email-address" 
+          />
+          <CustomInput 
+            icon="lock" 
+            placeholder="Password" 
+            value={form.password} 
+            onChangeText={(t) => updateForm('password', t)} 
+            isPassword 
+            secureTextEntry={!showPassword} 
+            onToggleSecure={() => setShowPassword(!showPassword)} 
+          />
+          <CustomInput 
+            icon="lock" 
+            placeholder="Confirm Password" 
+            value={form.confirmPassword} 
+            onChangeText={(t) => updateForm('confirmPassword', t)} 
+            isPassword 
+            secureTextEntry={!showConfirmPassword} 
+            onToggleSecure={() => setShowConfirmPassword(!showConfirmPassword)} 
+          />
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Sign Up</Text>
-      </TouchableOpacity>
+          <View style={styles.checkboxContainer}>
+            <Checkbox
+              value={agree}
+              onValueChange={setAgree}
+              color={agree ? '#3B82F6' : undefined}
+              style={styles.checkbox}
+            />
+            <Text style={styles.checkboxText}>
+              I agree to the <Text style={styles.linkTextInline}>Terms of Service</Text> and <Text style={styles.linkTextInline}>Privacy Policy</Text>
+            </Text>
+          </View>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.linkText}>Already have an account? Log In</Text>
-      </TouchableOpacity>
+          <GradientButton 
+            title="Create Account" 
+            onPress={handleRegister} 
+            isSubmitting={isSubmitting} 
+          />
+        </View>
+
+        <View style={styles.footerContainer}>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.footerText}>
+              Already have an account? <Text style={styles.footerLink}>Sign In</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: 'center', backgroundColor: '#F9FAFB' },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#111827', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#6B7280', marginBottom: 32 },
-  input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 16 },
-  button: { backgroundColor: '#4F46E5', borderRadius: 10, padding: 16, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  linkText: { color: '#4F46E5', textAlign: 'center', marginTop: 20, fontSize: 14, fontWeight: '500' },
+  container: {
+    flex: 1,
+    backgroundColor: '#FCFCFF',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 28,
+    paddingBottom: 40,
+  },
+  formContainer: {
+    width: '100%',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 28,
+    marginTop: 4,
+    paddingRight: 20,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    marginRight: 12,
+  },
+  checkboxText: {
+    fontSize: 13,
+    color: '#111827',
+  },
+  linkTextInline: {
+    color: '#2563EB',
+  },
+  footerContainer: {
+    alignItems: 'center',
+    marginTop: 'auto',
+    paddingTop: 10,
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  footerLink: {
+    color: '#2563EB',
+    fontWeight: '600',
+  },
 });

@@ -7,6 +7,8 @@ export type RootStackParamList = {
   AIChat: undefined;
   UploadNote: undefined;
   Tasks: undefined;
+  Notes: undefined;
+  Profile: undefined;
 };
 
 export type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
@@ -15,3 +17,5 @@ export type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamL
 export type UploadNoteScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'UploadNote'>;
 export type AIChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'AIChat'>;
 export type TasksScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Tasks'>;
+export type NotesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Notes'>;
+export type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;

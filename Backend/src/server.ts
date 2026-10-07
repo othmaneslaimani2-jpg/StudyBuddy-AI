@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Scalar API Reference Documentation
+
 app.get('/openapi.json', (_req: Request, res: Response) => {
   res.json(openApiSpec);
 });
@@ -41,7 +41,7 @@ app.use(
   })
 );
 
-// Routes
+
 app.use('/api/auth', authRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/tasks', taskRoutes);
@@ -57,7 +57,7 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('Database connected successfully.');
 
-    // Sync database models
+    
     await sequelize.sync();
     console.log('Database synchronized.');
 

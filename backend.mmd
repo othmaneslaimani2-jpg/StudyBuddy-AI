@@ -1,0 +1,45 @@
+graph TD
+    Server[server.ts] --> Middleware
+    Server --> Routes
+
+    subgraph Middleware
+        AuthMW[auth.ts]
+        AuthValMW[authValidation.ts]
+    end
+
+    subgraph Routes
+        AuthRoutes[authRoutes.ts]
+        AiRoutes[aiRoutes.ts]
+        NoteRoutes[noteRoutes.ts]
+        SubjectRoutes[subjectRoutes.ts]
+        TaskRoutes[taskRoutes.ts]
+    end
+    
+    Routes --> AuthRoutes
+    Routes --> AiRoutes
+    Routes --> NoteRoutes
+    Routes --> SubjectRoutes
+    Routes --> TaskRoutes
+
+    subgraph Controllers
+        AuthRoutes --> LoginCtrl[login.ts]
+        AuthRoutes --> SignupCtrl[signup.ts]
+        AiRoutes --> AiCtrl[aiController.ts]
+        NoteRoutes --> NoteCtrl[noteController.ts]
+        SubjectRoutes --> SubjectCtrl[subjectController.ts]
+        TaskRoutes --> TaskCtrl[taskController.ts]
+    end
+
+    AuthRoutes -.-> AuthValMW
+    AiRoutes -.-> AuthMW
+    NoteRoutes -.-> AuthMW
+    SubjectRoutes -.-> AuthMW
+    TaskRoutes -.-> AuthMW
+
+    subgraph Models
+        LoginCtrl -.-> UserModel[(User)]
+        SignupCtrl -.-> UserModel
+        NoteCtrl -.-> NoteModel[(Note)]
+        SubjectCtrl -.-> SubjectModel[(Subject)]
+        TaskCtrl -.-> TaskModel[(Task)]
+    end

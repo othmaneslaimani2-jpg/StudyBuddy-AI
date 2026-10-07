@@ -1,135 +1,274 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
-import apiClient from '../api/client';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { UploadNoteScreenNavigationProp } from '../types/navigation';
-
-interface Subject {
-  id: string;
-  title: string;
-  color?: string;
-}
 
 interface Props {
   navigation: UploadNoteScreenNavigationProp;
 }
 
+const FORMATS = [
+  { label: 'PDF', bg: '#F43F5E', isText: true },
+  { label: 'DOC', bg: '#3B82F6', isText: true },
+  { label: 'DOCX', bg: '#10B981', isText: true },
+  { label: 'JPG / PNG', bg: '#8B5CF6', isText: false },
+];
+
+const INFO_BULLETS = [
+  'Maximum file size: 10 MB',
+  'Supports handwritten or typed notes',
+];
+
 export default function UploadNoteScreen({ navigation }: Props) {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubjectId, setSelectedSubjectId] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
-
-  const fetchSubjects = async () => {
-    try {
-      const response = await apiClient.get('/subjects');
-      setSubjects(response.data);
-      if (response.data.length > 0) {
-        setSelectedSubjectId(response.data[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to load subjects:', error);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!title || !content || !selectedSubjectId) {
-      Alert.alert('Missing Fields', 'Please fill in all fields before uploading.');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await apiClient.post('/notes', {
-        title,
-        content,
-        subjectId: selectedSubjectId,
-      });
-
-      Alert.alert('Success 🎉', 'Note uploaded and vectorised for Gemini AI!', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.error || 'Failed to upload note.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      <Text style={styles.headerTitle}>Upload Class Note 📄</Text>
-      <Text style={styles.subtitle}>
-        Your note will be stored and indexed into Pinecone so your Gemini AI Tutor can answer questions about it.
-      </Text>
-
-      <Text style={styles.label}>Note Title</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g. Chapter 3: Photosynthesis Notes"
-        value={title}
-        onChangeText={setTitle}
-      />
-
-      <Text style={styles.label}>Select Subject</Text>
-      <View style={styles.subjectContainer}>
-        {subjects.map((sub) => (
-          <TouchableOpacity
-            key={sub.id}
-            style={[
-              styles.subjectChip,
-              selectedSubjectId === sub.id && { backgroundColor: sub.color || '#4F46E5', borderColor: sub.color },
-            ]}
-            onPress={() => setSelectedSubjectId(sub.id)}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                selectedSubjectId === sub.id && { color: '#FFFFFF', fontWeight: 'bold' },
-              ]}
-            >
-              {sub.title}
-            </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        { }
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="#111827" />
           </TouchableOpacity>
-        ))}
-      </View>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>Upload Note</Text>
+            <Text style={styles.subtitle}>Add your study notes and let AI help you</Text>
+          </View>
+        </View>
 
-      <Text style={styles.label}>Note Content</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder="Paste your study material or class summary here..."
-        value={content}
-        onChangeText={setContent}
-        multiline
-        numberOfLines={8}
-        textAlignVertical="top"
-      />
+        { }
+        <Image
+          source={require('../../assets/Artwork.png')}
+          style={styles.artwork}
+          resizeMode="contain"
+        />
 
-      <TouchableOpacity style={styles.submitBtn} onPress={handleUpload} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.btnText}>Upload & Vectorise Note</Text>
-        )}
-      </TouchableOpacity>
-    </ScrollView>
+        { }
+        <View style={styles.uploadContainer}>
+          <View style={styles.uploadIconContainer}>
+            <MaterialCommunityIcons name="file-upload-outline" size={32} color="#4F46E5" />
+          </View>
+          <Text style={styles.uploadTitle}>Upload Your Note</Text>
+          <Text style={styles.uploadSubtitle}>Drag and drop your file here, or tap to browse</Text>
+          <TouchableOpacity style={styles.chooseFileBtn} activeOpacity={0.8}>
+            <Text style={styles.chooseFileText}>Choose File</Text>
+          </TouchableOpacity>
+        </View>
+
+        { }
+        <View style={styles.formatsSection}>
+          <Text style={styles.formatsTitle}>Supported Formats</Text>
+          <View style={styles.formatCardsContainer}>
+            {FORMATS.map((f, i) => (
+              <View key={i} style={styles.formatCard}>
+                <View style={[styles.formatIconBg, { backgroundColor: f.bg }]}>
+                  {f.isText ? (
+                    <Text style={styles.formatIconText}>{f.label}</Text>
+                  ) : (
+                    <Ionicons name="image-outline" size={20} color="#FFFFFF" />
+                  )}
+                </View>
+                <Text style={styles.formatText}>{f.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        { }
+        <View style={styles.infoBox}>
+          <Ionicons name="information-circle" size={24} color="#4F46E5" style={styles.infoIcon} />
+          <View style={styles.infoTextContainer}>
+            {INFO_BULLETS.map((text, i) => (
+              <View key={i} style={styles.bulletRow}>
+                <View style={styles.bullet} />
+                <Text style={styles.infoText}>{text}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB', paddingTop: 60, paddingHorizontal: 20 },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#111827', marginBottom: 8 },
-  subtitle: { fontSize: 14, color: '#6B7280', marginBottom: 24, lineHeight: 20 },
-  label: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
-  input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10, padding: 14, marginBottom: 20, fontSize: 15 },
-  textArea: { height: 180 },
-  subjectContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-  subjectChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#D1D5DB', backgroundColor: '#FFFFFF' },
-  chipText: { fontSize: 13, color: '#374151' },
-  submitBtn: { backgroundColor: '#4F46E5', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 10 },
-  btnText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FAFAFF',
+  },
+  container: {
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    paddingBottom: 40,
+    alignItems: 'center',
+  },
+  header: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    justifyContent: 'center',
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    left: 0,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  headerTextContainer: {
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  artwork: {
+    width: '100%',
+    height: 220,
+    marginBottom: 20,
+  },
+  uploadContainer: {
+    width: '100%',
+    borderWidth: 1.5,
+    borderColor: '#C7D2FE',
+    borderStyle: 'dashed',
+    borderRadius: 24,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 28,
+  },
+  uploadIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  uploadTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  uploadSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  chooseFileBtn: {
+    backgroundColor: '#4F46E5',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 30,
+    width: '80%',
+    alignItems: 'center',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  chooseFileText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  formatsSection: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  formatsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  formatCardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  formatCard: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    width: '23%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  formatIconBg: {
+    width: 40,
+    height: 48,
+    borderRadius: 8,
+    borderTopRightRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  formatIconText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  formatText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F3FF',
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+    alignItems: 'flex-start',
+  },
+  infoIcon: {
+    marginRight: 12,
+  },
+  infoTextContainer: {
+    flex: 1,
+    paddingTop: 2,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  bullet: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#6B7280',
+    marginRight: 8,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#6B7280',
+  }
 });

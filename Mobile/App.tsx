@@ -8,7 +8,9 @@ import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import UploadNoteScreen from './src/screens/UploadNoteScreen';
+import NotesScreen from './src/screens/NotesScreen';
 import AIChatScreen from './src/screens/AiChatScreen';
+import TasksScreen from './src/screens/TasksScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -31,6 +33,8 @@ function RootNavigator() {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="UploadNote" component={UploadNoteScreen} />
             <Stack.Screen name="AIChat" component={AIChatScreen} />
+            <Stack.Screen name="Tasks" component={TasksScreen} />
+            <Stack.Screen name="Notes" component={NotesScreen} />
           </>
         ) : (
           <>

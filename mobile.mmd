@@ -1,0 +1,39 @@
+graph TD
+    App[App Navigation] --> AuthFlow
+    App --> MainAppFlow
+
+    subgraph Auth Flow
+        AuthFlow --> Login[Login Screen]
+        AuthFlow --> Register[Register Screen]
+        Login -.-> |Uses| AuthContext
+        Register -.-> |Uses| AuthContext
+    end
+
+    subgraph Main App Flow
+        MainAppFlow --> Home[Home Screen]
+        MainAppFlow --> AiChat[AI Chat Screen]
+        MainAppFlow --> Notes[Notes Screen]
+        MainAppFlow --> UploadNote[Upload Note Screen]
+        MainAppFlow --> Tasks[Tasks Screen]
+        MainAppFlow --> Profile[Profile Screen]
+    end
+
+    subgraph UI Components
+        Login -.-> AuthHeader
+        Register -.-> AuthHeader
+        Login -.-> CustomInput
+        Register -.-> CustomInput
+        Login -.-> GradientButton
+        Register -.-> GradientButton
+    end
+
+    AuthContext((Auth Context))
+    ApiClient[API Client client.ts]
+    
+    Home -.-> ApiClient
+    AiChat -.-> ApiClient
+    Notes -.-> ApiClient
+    UploadNote -.-> ApiClient
+    Tasks -.-> ApiClient
+    Profile -.-> ApiClient
+    AuthContext -.-> ApiClient
