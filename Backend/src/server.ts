@@ -7,6 +7,8 @@ import subjectRoutes from './routes/subjectRoutes';
 import taskRoutes from './routes/taskRoutes';
 import noteRoutes from './routes/noteRoutes';
 import aiRoutes from './routes/aiRoutes';
+import { apiReference } from '@scalar/express-api-reference';
+import { openApiSpec } from './docs/openapi';
 
 dotenv.config();
 
@@ -15,6 +17,29 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// Scalar API Reference Documentation
+app.get('/openapi.json', (_req: Request, res: Response) => {
+  res.json(openApiSpec);
+});
+
+app.use(
+  '/docs',
+  apiReference({
+    spec: {
+      content: openApiSpec,
+    },
+  })
+);
+
+app.use(
+  '/reference',
+  apiReference({
+    spec: {
+      content: openApiSpec,
+    },
+  })
+);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -38,6 +63,7 @@ async function startServer() {
 
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log(`Scalar API Docs available at http://localhost:${PORT}/docs`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

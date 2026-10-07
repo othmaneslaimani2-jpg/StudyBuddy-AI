@@ -14,6 +14,7 @@
   "dependencies": {
     "@google/genai": "^2.27.0",
     "@pinecone-database/pinecone": "^9.0.0",
+    "@scalar/express-api-reference": "^0.10.27",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
