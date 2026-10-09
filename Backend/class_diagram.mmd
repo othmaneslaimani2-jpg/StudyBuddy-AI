@@ -1,0 +1,46 @@
+classDiagram
+    class User {
+        +UUID id
+        +String fullName
+        +String email
+        +String password
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class Subject {
+        +UUID id
+        +String title
+        +String color
+        +UUID userId
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class Task {
+        +UUID id
+        +String title
+        +Date dueDate
+        +Boolean isCompleted
+        +UUID subjectId
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class Note {
+        +UUID id
+        +String title
+        +Text content
+        +UUID subjectId
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    User "1" -- "*" Subject : has many
+    Subject "*" -- "1" User : belongs to
+    
+    Subject "1" -- "*" Task : has many
+    Task "*" -- "1" Subject : belongs to
+    
+    Subject "1" -- "*" Note : has many
+    Note "*" -- "1" Subject : belongs to
