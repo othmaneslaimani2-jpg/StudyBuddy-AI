@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -82,6 +82,17 @@ export default function TasksScreen({ navigation }: any) {
     </View>
   );
 
+  const pendingCount = useMemo(() => tasks.filter(t => !t.isCompleted).length, [tasks]);
+  const completedCount = useMemo(() => tasks.filter(t => t.isCompleted).length, [tasks]);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      if (activeTab === 'pending') return !t.isCompleted;
+      if (activeTab === 'completed') return t.isCompleted;
+      return true;
+    });
+  }, [tasks, activeTab]);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -98,21 +109,16 @@ export default function TasksScreen({ navigation }: any) {
 
         <View style={styles.tabsContainer}>
           <FilterTab id="all" label="All Tasks" count={tasks.length} active={activeTab === 'all'} />
-          <FilterTab id="pending" label="Pending" count={tasks.filter(t => !t.isCompleted).length} active={activeTab === 'pending'} />
+          <FilterTab id="pending" label="Pending" count={pendingCount} active={activeTab === 'pending'} />
           <View style={styles.tabDivider} />
-          <FilterTab id="completed" label="Completed" count={tasks.filter(t => t.isCompleted).length} active={activeTab === 'completed'} />
+          <FilterTab id="completed" label="Completed" count={completedCount} active={activeTab === 'completed'} />
         </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Your Tasks</Text>
         </View>
         
-        {tasks
-          .filter(t => {
-            if (activeTab === 'pending') return !t.isCompleted;
-            if (activeTab === 'completed') return t.isCompleted;
-            return true;
-          })
+        {filteredTasks
           .map(task => (
             <TaskItem 
               key={task.id}

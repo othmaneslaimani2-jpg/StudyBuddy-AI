@@ -121,7 +121,16 @@ export default function AIChatScreen({ navigation }: any) {
         <TouchableOpacity style={styles.iconBtn}><Feather name="more-horizontal" size={24} color="#4F46E5" /></TouchableOpacity>
       </View>
 
-      <FlatList data={messages} keyExtractor={(item) => item.id} renderItem={renderBubble} contentContainerStyle={styles.messageList} />
+      <FlatList 
+        data={messages} 
+        keyExtractor={(item) => item.id} 
+        renderItem={renderBubble} 
+        contentContainerStyle={styles.messageList} 
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+      />
 
       {loading && (
         <View style={styles.loadingContainer}>
