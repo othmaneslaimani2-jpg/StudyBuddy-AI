@@ -34,13 +34,7 @@ export default function AIChatScreen({ navigation }: any) {
   const handleAttachFile = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: [
-          'application/pdf',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/msword',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        ],
+        type: '*/*',
         copyToCacheDirectory: true,
       });
 
@@ -94,7 +88,7 @@ export default function AIChatScreen({ navigation }: any) {
                 </View>
                 <Feather name="calendar" size={20} color="#10B981" />
               </View>
-              <TouchableOpacity style={styles.actionBtn}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Tasks')}>
                 <Text style={styles.actionBtnText}>View in Tasks</Text>
                 <Feather name="arrow-right" size={16} color="#4F46E5" />
               </TouchableOpacity>
@@ -121,7 +115,7 @@ export default function AIChatScreen({ navigation }: any) {
           <Text style={styles.headerTitle}>StudyBuddy AI Assistant</Text>
           <View style={styles.statusRow}>
             <View style={styles.statusDot} />
-            <Text style={styles.headerSub}>Powered by Pinecone RAG & Function Calling</Text>
+            <Text style={styles.headerSub}>Powered by Gemini</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.iconBtn}><Feather name="more-horizontal" size={24} color="#4F46E5" /></TouchableOpacity>
@@ -187,7 +181,7 @@ const styles = StyleSheet.create({
   actionBtnText: { color: '#4F46E5', fontWeight: 'bold', fontSize: 13, marginRight: 6 },
   loadingContainer: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   loadingText: { fontSize: 13, color: '#6B7280', marginLeft: 8 },
-  inputContainer: { padding: 16, backgroundColor: '#FAFAFA' },
+  inputContainer: { padding: 16, backgroundColor: '#FAFAFA', marginBottom: -12, },
   inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 28, paddingHorizontal: 6, paddingVertical: 6, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
   attachBtn: { padding: 10 },
   input: { flex: 1, fontSize: 15, color: '#111827', paddingVertical: 8, maxHeight: 100 },
