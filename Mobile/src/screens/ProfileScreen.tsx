@@ -1,11 +1,13 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Switch, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Switch, Alert, Modal, TextInput } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenNavigationProp } from '../types/navigation';
 import apiClient from '../api/client';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Props {
   navigation: ProfileScreenNavigationProp;
@@ -19,17 +21,57 @@ const MENU_ITEMS = [
 ];
 
 export default function ProfileScreen({ navigation }: Props) {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, updateUser } = useContext(AuthContext);
   const [notify, setNotify] = useState(true);
   const [completedTasksCount, setCompletedTasksCount] = useState(0);
   const [notesCount, setNotesCount] = useState(0);
   const [streakCount, setStreakCount] = useState(0);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editName, setEditName] = useState(user?.fullName || '');
 
   useFocusEffect(
     React.useCallback(() => {
       fetchData();
+      loadProfileImage();
     }, [])
   );
+
+  const loadProfileImage = async () => {
+    try {
+      const savedImage = await AsyncStorage.getItem('profileImage');
+      if (savedImage) setProfileImage(savedImage);
+    } catch (err) {
+      console.log('Failed to load profile image', err);
+    }
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Permission to access camera roll is required!');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const uri = result.assets[0].uri;
+        setProfileImage(uri);
+        await AsyncStorage.setItem('profileImage', uri);
+      }
+    } catch (error) {
+      console.log('Error picking image', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -52,6 +94,19 @@ export default function ProfileScreen({ navigation }: Props) {
     }
   };
 
+  const handleUpdateProfile = async () => {
+    if (!editName.trim()) return;
+    try {
+      const res = await apiClient.put('/auth/profile', { fullName: editName });
+      await updateUser(res.data.user);
+      setEditModalVisible(false);
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch (err) {
+      console.error('Update profile error:', err);
+      Alert.alert('Error', 'Failed to update profile.');
+    }
+  };
+
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
@@ -69,13 +124,16 @@ export default function ProfileScreen({ navigation }: Props) {
         { }
         <View style={styles.profileHeader}>
           <View style={styles.imageContainer}>
-            <Image source={{ uri: 'https://i.pravatar.cc/150?img=12' }} style={styles.profileImage} />
-            <TouchableOpacity style={styles.editImageBtn}>
+            <Image source={{ uri: profileImage || 'https://i.pravatar.cc/150?img=12' }} style={styles.profileImage} />
+            <TouchableOpacity style={styles.editImageBtn} onPress={handlePickImage}>
               <Ionicons name="camera" size={16} color="#FFF" />
             </TouchableOpacity>
           </View>
           <Text style={styles.userName}>{user?.fullName || 'John Doe'}</Text>
-          <TouchableOpacity style={styles.editProfileBtn}>
+          <TouchableOpacity style={styles.editProfileBtn} onPress={() => {
+            setEditName(user?.fullName || '');
+            setEditModalVisible(true);
+          }}>
             <Text style={styles.editProfileText}>Edit Profile Info</Text>
           </TouchableOpacity>
         </View>
@@ -127,6 +185,29 @@ export default function ProfileScreen({ navigation }: Props) {
         </TouchableOpacity>
 
       </ScrollView>
+
+      <Modal visible={editModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Profile</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Full Name"
+              autoCapitalize="words"
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setEditModalVisible(false)}>
+                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalBtnSave} onPress={handleUpdateProfile}>
+                <Text style={styles.modalBtnSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -152,5 +233,14 @@ const styles = StyleSheet.create({
   menuText: { fontSize: 15, color: '#374151', fontWeight: '500' },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', paddingVertical: 16, backgroundColor: '#FEF2F2', borderRadius: 16 },
   logoutIcon: { marginRight: 8 },
-  logoutText: { color: '#EF4444', fontSize: 16, fontWeight: '600' }
+  logoutText: { color: '#EF4444', fontSize: 16, fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '80%', backgroundColor: '#FFF', borderRadius: 16, padding: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 16 },
+  modalInput: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, fontSize: 16, marginBottom: 20 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end' },
+  modalBtnCancel: { padding: 10, marginRight: 10 },
+  modalBtnCancelText: { color: '#6B7280', fontSize: 15, fontWeight: '600' },
+  modalBtnSave: { backgroundColor: '#4F46E5', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+  modalBtnSaveText: { color: '#FFF', fontSize: 15, fontWeight: '600' }
 });

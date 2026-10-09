@@ -57,8 +57,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
+  const updateUser = async (updatedUser: User): Promise<void> => {
+    setUser(updatedUser);
+    await SecureStore.setItemAsync('userInfo', JSON.stringify(updatedUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ userToken, user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ userToken, user, isLoading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

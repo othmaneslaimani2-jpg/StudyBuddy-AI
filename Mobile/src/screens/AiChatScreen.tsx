@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import apiClient from '../api/client';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Message { id: string; sender: 'ai' | 'user'; text: string; actionExecuted?: boolean; }
 
@@ -12,6 +14,21 @@ export default function AIChatScreen({ navigation }: any) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [attachedContext, setAttachedContext] = useState('');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadProfileImage = async () => {
+        try {
+          const savedImage = await AsyncStorage.getItem('profileImage');
+          if (savedImage) setProfileImage(savedImage);
+        } catch (err) {
+          console.log('Failed to load profile image', err);
+        }
+      };
+      loadProfileImage();
+    }, [])
+  );
 
   const handleAttachFile = async () => {
     try {
@@ -88,7 +105,7 @@ export default function AIChatScreen({ navigation }: any) {
           )}
           <Text style={[styles.timestamp, isUser ? styles.userTime : styles.aiTime]}>9:41 AM</Text>
         </View>
-        {isUser && <Image source={{ uri: 'https://i.pravatar.cc/150?img=12' }} style={styles.avatar} />}
+        {isUser && <Image source={{ uri: profileImage || 'https://i.pravatar.cc/150?img=12' }} style={styles.avatar} />}
       </View>
     );
   };
