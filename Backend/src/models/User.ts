@@ -3,6 +3,7 @@ import sequelize from '../../config/database';
 
 export interface UserAttributes {
   id: string;
+  fullName: string;
   email: string;
   password?: string;
   createdAt?: Date;
@@ -12,12 +13,13 @@ export interface UserAttributes {
 export interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
-  public id!: string;
-  public email!: string;
-  public password!: string;
+  declare id: string;
+  declare fullName: string;
+  declare email: string;
+  declare password: string;
 
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 }
 
 User.init(
@@ -26,6 +28,11 @@ User.init(
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+    },
+    fullName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'Student',
     },
     email: {
       type: DataTypes.STRING,

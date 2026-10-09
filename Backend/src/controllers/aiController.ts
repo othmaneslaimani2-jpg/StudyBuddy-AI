@@ -20,8 +20,11 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
     }
 
     const embeddingResponse = await ai.models.embedContent({
-      model: 'text-embedding-004',
+      model: 'gemini-embedding-2',
       contents: message,
+      config: {
+        outputDimensionality: 768
+      }
     });
     const queryVector = embeddingResponse.embeddings?.[0]?.values;
 
@@ -29,23 +32,27 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
       throw new Error('Failed to generate embedding vector.');
     }
 
-    const index = getPineconeIndex();
-    const pineconeResults = await index.query({
-      vector: queryVector,
-      topK: 3,
-      includeMetadata: true,
-      filter: { userId: { $eq: userId } },
-    });
-
     let retrievedNotesContext = '';
-    if (pineconeResults.matches && pineconeResults.matches.length > 0) {
-      retrievedNotesContext = pineconeResults.matches
-        .filter((match) => (match.score ?? 0) > 0.3)
-        .map((match) => {
-          const metadata = match.metadata as { title?: string; textChunk?: string } | undefined;
-          return `[Document: ${metadata?.title || 'Untitled'}]\n${metadata?.textChunk || ''}`;
-        })
-        .join('\n\n');
+    try {
+      const index = getPineconeIndex();
+      const pineconeResults = await index.query({
+        vector: queryVector,
+        topK: 3,
+        includeMetadata: true,
+        filter: { userId: { $eq: userId } },
+      });
+
+      if (pineconeResults.matches && pineconeResults.matches.length > 0) {
+        retrievedNotesContext = pineconeResults.matches
+          .filter((match) => (match.score ?? 0) > 0.3)
+          .map((match) => {
+            const metadata = match.metadata as { title?: string; textChunk?: string } | undefined;
+            return `[Document: ${metadata?.title || 'Untitled'}]\n${metadata?.textChunk || ''}`;
+          })
+          .join('\n\n');
+      }
+    } catch (err: any) {
+      console.warn('Pinecone query failed, continuing without notes context:', err.message);
     }
 
     const createTaskTool = {
@@ -76,7 +83,7 @@ RETRIEVED CLASS NOTES:
 ${retrievedNotesContext ? retrievedNotesContext : 'No matching notes found.'}`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       contents: message,
       config: {
         systemInstruction,

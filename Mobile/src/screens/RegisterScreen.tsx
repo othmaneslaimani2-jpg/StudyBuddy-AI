@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { RegisterScreenNavigationProp } from '../types/navigation';
 import Checkbox from 'expo-checkbox';
@@ -17,7 +18,7 @@ export default function RegisterScreen({ navigation }: Props) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agree, setAgree] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const { register } = useContext(AuthContext);
 
   const updateForm = (key: keyof typeof form, value: string) => setForm(prev => ({ ...prev, [key]: value }));
@@ -48,43 +49,43 @@ export default function RegisterScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+
         <AuthHeader subtitle="Create your account" />
 
         <View style={styles.formContainer}>
-          <CustomInput 
-            icon="user" 
-            placeholder="Full Name" 
-            value={form.name} 
-            onChangeText={(t) => updateForm('name', t)} 
+          <CustomInput
+            icon="user"
+            placeholder="Full Name"
+            value={form.name}
+            onChangeText={(t) => updateForm('name', t)}
           />
-          <CustomInput 
-            icon="mail" 
-            placeholder="your@email.com" 
-            value={form.email} 
-            onChangeText={(t) => updateForm('email', t)} 
-            autoCapitalize="none" 
-            keyboardType="email-address" 
+          <CustomInput
+            icon="mail"
+            placeholder="your@email.com"
+            value={form.email}
+            onChangeText={(t) => updateForm('email', t)}
+            autoCapitalize="none"
+            keyboardType="email-address"
           />
-          <CustomInput 
-            icon="lock" 
-            placeholder="Password" 
-            value={form.password} 
-            onChangeText={(t) => updateForm('password', t)} 
-            isPassword 
-            secureTextEntry={!showPassword} 
-            onToggleSecure={() => setShowPassword(!showPassword)} 
+          <CustomInput
+            icon="lock"
+            placeholder="Password"
+            value={form.password}
+            onChangeText={(t) => updateForm('password', t)}
+            isPassword
+            secureTextEntry={!showPassword}
+            onToggleSecure={() => setShowPassword(!showPassword)}
           />
-          <CustomInput 
-            icon="lock" 
-            placeholder="Confirm Password" 
-            value={form.confirmPassword} 
-            onChangeText={(t) => updateForm('confirmPassword', t)} 
-            isPassword 
-            secureTextEntry={!showConfirmPassword} 
-            onToggleSecure={() => setShowConfirmPassword(!showConfirmPassword)} 
+          <CustomInput
+            icon="lock"
+            placeholder="Confirm Password"
+            value={form.confirmPassword}
+            onChangeText={(t) => updateForm('confirmPassword', t)}
+            isPassword
+            secureTextEntry={!showConfirmPassword}
+            onToggleSecure={() => setShowConfirmPassword(!showConfirmPassword)}
           />
 
           <View style={styles.checkboxContainer}>
@@ -99,10 +100,10 @@ export default function RegisterScreen({ navigation }: Props) {
             </Text>
           </View>
 
-          <GradientButton 
-            title="Create Account" 
-            onPress={handleRegister} 
-            isSubmitting={isSubmitting} 
+          <GradientButton
+            title="Create Account"
+            onPress={handleRegister}
+            isSubmitting={isSubmitting}
           />
         </View>
 
@@ -114,7 +115,7 @@ export default function RegisterScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 16,
     marginTop: 4,
     paddingRight: 20,
   },

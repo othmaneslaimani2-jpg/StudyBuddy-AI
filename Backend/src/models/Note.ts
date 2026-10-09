@@ -13,13 +13,13 @@ export interface NoteAttributes {
 export interface NoteCreationAttributes extends Optional<NoteAttributes, 'id'> {}
 
 export class Note extends Model<NoteAttributes, NoteCreationAttributes> implements NoteAttributes {
-  public id!: string;
-  public title!: string;
-  public content!: string;
-  public subjectId!: string;
+  declare id: string;
+  declare title: string;
+  declare content: string;
+  declare subjectId: string;
 
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 }
 
 Note.init(

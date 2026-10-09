@@ -14,14 +14,14 @@ export interface TaskAttributes {
 export interface TaskCreationAttributes extends Optional<TaskAttributes, 'id' | 'isCompleted'> {}
 
 export class Task extends Model<TaskAttributes, TaskCreationAttributes> implements TaskAttributes {
-  public id!: string;
-  public title!: string;
-  public dueDate!: Date;
-  public isCompleted!: boolean;
-  public subjectId!: string;
+  declare id: string;
+  declare title: string;
+  declare dueDate: Date;
+  declare isCompleted: boolean;
+  declare subjectId: string;
 
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 }
 
 Task.init(

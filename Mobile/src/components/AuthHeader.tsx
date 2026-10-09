@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   tagline: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
     fontWeight: '400',
   },

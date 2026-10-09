@@ -1,17 +1,21 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Checkbox from 'expo-checkbox';
 import apiClient from '../api/client';
 
 export default function HomeScreen({ navigation }: any) {
-  const { logout } = useContext(AuthContext);
+  const { logout, user } = useContext(AuthContext);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [notes, setNotes] = useState<any[]>([]);
+
+  const firstName = user?.fullName?.split(' ')[0] || 'Student';
 
   useEffect(() => {
     fetchTasks();
+    fetchNotes();
   }, []);
 
   const fetchTasks = async () => {
@@ -20,6 +24,15 @@ export default function HomeScreen({ navigation }: any) {
       setTasks(res.data);
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
+    }
+  };
+
+  const fetchNotes = async () => {
+    try {
+      const res = await apiClient.get('/notes');
+      setNotes(res.data);
+    } catch (error) {
+      console.error('Failed to fetch notes:', error);
     }
   };
 
@@ -32,55 +45,49 @@ export default function HomeScreen({ navigation }: any) {
       <Text style={styles.statCount}>{count}</Text>
       <View style={styles.statFooter}>
         <Text style={styles.statSub}>{sub}</Text>
-        <Feather name="arrow-right" size={16} color={color} style={styles.statArrow} />
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        
+
         <View style={styles.header}>
-          <View style={styles.avatarContainer}>
+          <TouchableOpacity style={styles.avatarContainer} onPress={() => navigation.navigate('Profile')}>
             <Image source={require('../../assets/icon.png')} style={styles.avatar} />
             <View style={styles.statusDot} />
-          </View>
+          </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={styles.welcomeText}>Welcome back,</Text>
-            <Text style={styles.nameText}>Alex 👋</Text>
+            <Text style={styles.nameText}>{firstName} 👋</Text>
             <Text style={styles.readyText}>Ready to study today?</Text>
           </View>
           <TouchableOpacity style={styles.bellBtn}>
             <Feather name="bell" size={20} color="#111827" />
             <View style={styles.bellDot} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-            <Feather name="log-out" size={16} color="#EF4444" />
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.statsRow}>
           <StatCard title="Tasks Due" count={tasks.filter(t => !t.isCompleted).length.toString()} sub="This week" icon="check-square" color="#4F46E5" bg="#EEF2FF" iconBg="#C7D2FE" />
-          <StatCard title="Indexed Notes" count="8" sub="In Pinecone" icon="file-text" color="#10B981" bg="#ECFDF5" iconBg="#A7F3D0" />
+          <StatCard title="Indexed Notes" count={notes.length.toString()} sub="In Pinecone" icon="file-text" color="#10B981" bg="#ECFDF5" iconBg="#A7F3D0" />
         </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('AIChat')}>
-          <LinearGradient colors={['#4F46E5', '#3B82F6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.banner}>
+        <TouchableOpacity onPress={() => navigation.navigate('AIChat')} style={styles.bannerContainer}>
+          <ImageBackground source={require('../../assets/card.png')} style={styles.bannerImage} resizeMode="stretch">
             <View style={styles.bannerContent}>
-              <Text style={styles.bannerTitle}>Ask StudyBuddy AI</Text>
+              <Text style={styles.bannerTitle}>Ask Study Buddy AI</Text>
               <Text style={styles.bannerSub}>e.g., "What is mitosis?" or{"\n"}"Remind me to study tomorrow"</Text>
             </View>
             <View style={styles.bannerIconContainer}>
               <View style={styles.bannerArrow}><Feather name="arrow-right" size={20} color="#4F46E5" /></View>
             </View>
-          </LinearGradient>
+          </ImageBackground>
         </TouchableOpacity>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Tasks</Text>
-          <TouchableOpacity><Text style={styles.seeAll}>See all</Text></TouchableOpacity>
         </View>
 
         {tasks.slice(0, 3).map(task => (
@@ -91,8 +98,8 @@ export default function HomeScreen({ navigation }: any) {
               <Text style={styles.itemSub}>{task.Subject?.title || 'General'}</Text>
             </View>
             <View style={[styles.dateBadge, { backgroundColor: `${task.Subject?.color || '#3B82F6'}33` }]}>
-              <Feather name="calendar" size={12} color={task.Subject?.color || '#3B82F6'}/>
-              <Text style={[styles.dateText, {color: task.Subject?.color || '#3B82F6'}]}>
+              <Feather name="calendar" size={12} color={task.Subject?.color || '#3B82F6'} />
+              <Text style={[styles.dateText, { color: task.Subject?.color || '#3B82F6' }]}>
                 Due: {new Date(task.dueDate).toLocaleDateString()}
               </Text>
             </View>
@@ -102,51 +109,49 @@ export default function HomeScreen({ navigation }: any) {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Notes</Text>
-          <TouchableOpacity><Text style={styles.seeAll}>See all</Text></TouchableOpacity>
         </View>
 
-        <View style={styles.noteItem}>
-          <View style={[styles.noteIconBox, { backgroundColor: '#F3E8FF' }]}><Feather name="file-text" size={24} color="#A855F7" /></View>
-          <View style={styles.noteInfo}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={styles.itemTitle} numberOfLines={1}>Biology Ch. 3 - Mitosis</Text>
-              <Feather name="more-horizontal" size={20} color="#9CA3AF" />
+        {notes.length === 0 ? (
+          <Text style={{ textAlign: 'center', color: '#6B7280', marginTop: 10 }}>No notes found. Upload some!</Text>
+        ) : (
+          notes.slice(0, 5).map(note => (
+            <View key={note.id} style={styles.noteItem}>
+              <View style={[styles.noteIconBox, { backgroundColor: `${note.Subject?.color || '#A855F7'}33` }]}>
+                <Feather name="file-text" size={24} color={note.Subject?.color || '#A855F7'} />
+              </View>
+              <View style={styles.noteInfo}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={styles.itemTitle} numberOfLines={1}>{note.title}</Text>
+                  <Feather name="more-horizontal" size={20} color="#9CA3AF" />
+                </View>
+                <Text style={styles.noteDesc} numberOfLines={2}>{note.content}</Text>
+                <View style={styles.noteFooter}>
+                  <View style={styles.noteMeta}>
+                    <Feather name="calendar" size={12} color="#6B7280" />
+                    <Text style={styles.noteMetaText}>{new Date(note.createdAt).toLocaleDateString()}</Text>
+                  </View>
+                  <View style={styles.indexedBadge}>
+                    <Feather name="check-circle" size={12} color="#10B981" />
+                    <Text style={styles.indexedText}>Indexed</Text>
+                  </View>
+                  <View style={{ flex: 1 }} />
+                  <View style={[styles.tagBadge, { backgroundColor: `${note.Subject?.color || '#A855F7'}33` }]}>
+                    <Text style={[styles.tagText, { color: note.Subject?.color || '#A855F7' }]}>{note.Subject?.title || 'General'}</Text>
+                  </View>
+                </View>
+              </View>
             </View>
-            <Text style={styles.noteDesc} numberOfLines={2}>Mitosis is the process by which a single cell divides into two identical daughter...</Text>
-            <View style={styles.noteFooter}>
-              <View style={styles.noteMeta}><Feather name="calendar" size={12} color="#6B7280" /><Text style={styles.noteMetaText}>2 days ago</Text></View>
-              <View style={styles.indexedBadge}><Feather name="check-circle" size={12} color="#10B981" /><Text style={styles.indexedText}>Indexed</Text></View>
-              <View style={{ flex: 1 }} />
-              <View style={[styles.tagBadge, { backgroundColor: '#F3E8FF' }]}><Text style={[styles.tagText, { color: '#A855F7' }]}>Biology</Text></View>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.noteItem}>
-          <View style={[styles.noteIconBox, { backgroundColor: '#DBEAFE' }]}><Feather name="file-text" size={24} color="#3B82F6" /></View>
-          <View style={styles.noteInfo}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={styles.itemTitle} numberOfLines={1}>History - WW II Notes</Text>
-              <Feather name="more-horizontal" size={20} color="#9CA3AF" />
-            </View>
-            <Text style={styles.noteDesc} numberOfLines={2}>Key events leading to World War II include the Treaty of Versailles, the rise of...</Text>
-            <View style={styles.noteFooter}>
-              <View style={styles.noteMeta}><Feather name="calendar" size={12} color="#6B7280" /><Text style={styles.noteMetaText}>4 days ago</Text></View>
-              <View style={styles.indexedBadge}><Feather name="check-circle" size={12} color="#10B981" /><Text style={styles.indexedText}>Indexed</Text></View>
-              <View style={{ flex: 1 }} />
-              <View style={[styles.tagBadge, { backgroundColor: '#FFEDD5' }]}><Text style={[styles.tagText, { color: '#F97316' }]}>History</Text></View>
-            </View>
-          </View>
-        </View>
+          ))
+        )}
 
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
-  scroll: { padding: 20, paddingTop: 60, paddingBottom: 40 },
+  scroll: { padding: 20, paddingTop: 10, paddingBottom: 20 },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   avatarContainer: { position: 'relative', marginRight: 12 },
   avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#E5E7EB' },
@@ -167,12 +172,13 @@ const styles = StyleSheet.create({
   statFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statSub: { fontSize: 13, color: '#6B7280' },
   statArrow: { backgroundColor: '#FFF', borderRadius: 10, overflow: 'hidden' },
-  banner: { borderRadius: 20, padding: 20, flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
-  bannerContent: { flex: 1 },
-  bannerTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold', marginBottom: 6 },
-  bannerSub: { color: '#E0E7FF', fontSize: 13, lineHeight: 20 },
-  bannerIconContainer: { justifyContent: 'flex-end', alignItems: 'center', height: '100%' },
-  bannerArrow: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-end', marginTop: 30 },
+  bannerContainer: { height: 160, marginBottom: 20, marginHorizontal: -12, borderRadius: 20, overflow: 'hidden' },
+  bannerImage: { width: '100%', height: '100%', paddingHorizontal: 0, paddingVertical: 10, flexDirection: 'row' },
+  bannerContent: { flex: 1, justifyContent: 'center', paddingLeft: 15,  },
+  bannerTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold', marginBottom: 30, paddingLeft: 11, },
+  bannerSub: { color: '#ffffffff', fontSize: 13, lineHeight: 18, paddingLeft: 11, },
+  bannerIconContainer: { justifyContent: 'flex-end', alignItems: 'center', paddingLeft: 0, paddingBottom: 18, paddingRight: 6, },
+  bannerArrow: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
   seeAll: { color: '#4F46E5', fontSize: 14, fontWeight: '500' },

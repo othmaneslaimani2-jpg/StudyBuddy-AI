@@ -9,16 +9,10 @@ Interactive API reference powered by **Scalar Docs**.
 ### Features:
 - 🔐 **Authentication**: JWT-based user sign-up & log-in
 - 📚 **Subjects & Tasks**: Homework and subject management
-- 📝 **Vector Notes**: RAG-ready notes indexed with Google Gemini (\`text-embedding-004\`) and Pinecone
+- 📝 **Vector Notes**: RAG-ready notes indexed with Google Gemini (\`gemini-embedding-2\`) and Pinecone
 - 🤖 **AI Tutor**: Real-time tutoring and automated task scheduling with Gemini 2.5 Flash
 `,
   },
-  servers: [
-    {
-      url: 'http://localhost:5000',
-      description: 'Local Development Server',
-    },
-  ],
   components: {
     securitySchemes: {
       BearerAuth: {
@@ -33,6 +27,7 @@ Interactive API reference powered by **Scalar Docs**.
         type: 'object',
         properties: {
           id: { type: 'string', format: 'uuid' },
+          fullName: { type: 'string', example: 'Alex Student' },
           email: { type: 'string', format: 'email' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
@@ -45,6 +40,8 @@ Interactive API reference powered by **Scalar Docs**.
           title: { type: 'string', example: 'Biology' },
           color: { type: 'string', example: '#4F46E5' },
           userId: { type: 'string', format: 'uuid' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
       },
       Task: {
@@ -53,7 +50,10 @@ Interactive API reference powered by **Scalar Docs**.
           id: { type: 'string', format: 'uuid' },
           title: { type: 'string', example: 'Review Chapter 3 Flashcards' },
           dueDate: { type: 'string', format: 'date-time' },
+          isCompleted: { type: 'boolean', example: false },
           subjectId: { type: 'string', format: 'uuid' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
       },
       Note: {
@@ -62,7 +62,11 @@ Interactive API reference powered by **Scalar Docs**.
           id: { type: 'string', format: 'uuid' },
           title: { type: 'string', example: 'Photosynthesis Overview' },
           content: { type: 'string', example: 'Light-dependent reactions occur in the thylakoid membranes...' },
+          vectorId: { type: 'string', example: 'vec_12345' },
           subjectId: { type: 'string', format: 'uuid' },
+          userId: { type: 'string', format: 'uuid' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
       },
       ErrorResponse: {
@@ -107,11 +111,17 @@ Interactive API reference powered by **Scalar Docs**.
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['email', 'password'],
+                required: ['fullName', 'email', 'password'],
                 properties: {
+                  fullName: { type: 'string', example: 'Alex Student' },
                   email: { type: 'string', format: 'email', example: 'student@studybuddy.ai' },
                   password: { type: 'string', format: 'password', example: 'SecretP@ssword123' },
                 },
+              },
+              example: {
+                fullName: 'Alex Student',
+                email: 'student@studybuddy.ai',
+                password: 'SecretP@ssword123',
               },
             },
           },
@@ -235,7 +245,17 @@ Interactive API reference powered by **Scalar Docs**.
               'application/json': {
                 schema: {
                   type: 'array',
-                  items: { $ref: '#/components/schemas/Task' },
+                  items: {
+                    allOf: [
+                      { $ref: '#/components/schemas/Task' },
+                      {
+                        type: 'object',
+                        properties: {
+                          Subject: { $ref: '#/components/schemas/Subject' }
+                        }
+                      }
+                    ]
+                  },
                 },
               },
             },
@@ -278,7 +298,7 @@ Interactive API reference powered by **Scalar Docs**.
       post: {
         tags: ['Notes'],
         summary: 'Upload and vectorize a study note',
-        description: 'Saves note to PostgreSQL, generates embeddings via Gemini (text-embedding-004), and indexes into Pinecone for RAG.',
+        description: 'Saves note to PostgreSQL, generates embeddings via Gemini (gemini-embedding-2), and indexes into Pinecone for RAG.',
         security: [{ BearerAuth: [] }],
         requestBody: {
           required: true,

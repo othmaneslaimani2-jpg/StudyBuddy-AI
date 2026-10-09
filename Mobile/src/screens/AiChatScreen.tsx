@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as DocumentPicker from 'expo-document-picker';
 import apiClient from '../api/client';
 
 interface Message { id: string; sender: 'ai' | 'user'; text: string; actionExecuted?: boolean; }
@@ -9,12 +11,44 @@ export default function AIChatScreen({ navigation }: any) {
   const [messages, setMessages] = useState<Message[]>([{ id: '1', sender: 'ai', text: 'Hello! I am your StudyBuddy AI Tutor. Ask me anything about your notes or tell me to schedule a task!' }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [attachedContext, setAttachedContext] = useState('');
+
+  const handleAttachFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/pdf',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/msword',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ],
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const file = result.assets[0];
+        setMessages((prev) => [...prev, { 
+          id: Date.now().toString(), 
+          sender: 'user', 
+          text: `📎 Attached file: ${file.name}` 
+        }]);
+        setAttachedContext(`\n\n[System Note: The user has attached a file named "${file.name}". For this prototype, pretend you have read it and it contains relevant study notes. Acknowledge the file if they ask about it.]`);
+      }
+    } catch (err) {
+      console.error('File pick error:', err);
+    }
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
     const userMsg: Message = { id: Date.now().toString(), sender: 'user', text: input };
     setMessages((prev) => [...prev, userMsg]);
-    const promptText = input; setInput(''); setLoading(true);
+    
+    const promptText = attachedContext ? `${input}${attachedContext}` : input; 
+    setInput(''); 
+    setAttachedContext('');
+    setLoading(true);
 
     try {
       const response = await apiClient.post('/ai/chat', { message: promptText });
@@ -30,7 +64,7 @@ export default function AIChatScreen({ navigation }: any) {
     const isUser = item.sender === 'user';
     return (
       <View style={[styles.messageRow, isUser ? styles.userRow : styles.aiRow]}>
-        {!isUser && <Image source={require('../../assets/icon.png')} style={styles.avatar} />}
+        {!isUser && <Image source={require('../../assets/bot.png')} style={styles.avatar} />}
         <View style={styles.bubbleContainer}>
           {item.actionExecuted ? (
             <View style={styles.actionCard}>
@@ -54,16 +88,17 @@ export default function AIChatScreen({ navigation }: any) {
           )}
           <Text style={[styles.timestamp, isUser ? styles.userTime : styles.aiTime]}>9:41 AM</Text>
         </View>
-        {isUser && <View style={[styles.avatar, styles.userAvatarPlaceholder]}><Feather name="user" size={18} color="#FFF" /></View>}
+        {isUser && <Image source={{ uri: 'https://i.pravatar.cc/150?img=12' }} style={styles.avatar} />}
       </View>
     );
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.header}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => navigation?.goBack()}><Feather name="chevron-left" size={24} color="#111827" /></TouchableOpacity>
-        <Image source={require('../../assets/icon.png')} style={styles.headerAvatar} />
+        <Image source={require('../../assets/bot.png')} style={styles.headerAvatar} />
         <View style={styles.headerTextContainer}>
           <Text style={styles.headerTitle}>StudyBuddy AI Assistant</Text>
           <View style={styles.statusRow}>
@@ -85,20 +120,23 @@ export default function AIChatScreen({ navigation }: any) {
 
       <View style={styles.inputContainer}>
         <View style={styles.inputRow}>
-          <TouchableOpacity style={styles.attachBtn}><Feather name="paperclip" size={20} color="#6B7280" /></TouchableOpacity>
+          <TouchableOpacity style={styles.attachBtn} onPress={handleAttachFile}>
+            <Feather name="paperclip" size={20} color="#6B7280" />
+          </TouchableOpacity>
           <TextInput style={styles.input} placeholder="Ask a question or schedule a task..." value={input} onChangeText={setInput} multiline />
           <TouchableOpacity style={[styles.sendBtn, !input.trim() && { opacity: 0.5 }]} onPress={sendMessage}>
             <Feather name="send" size={18} color="#FFF" style={{ marginLeft: -2, marginTop: 2 }} />
           </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 50, paddingBottom: 16, paddingHorizontal: 16, backgroundColor: '#FAFAFA' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 16, paddingBottom: 16, paddingHorizontal: 16, backgroundColor: '#FAFAFA' },
   iconBtn: { padding: 8, backgroundColor: '#F3F4F6', borderRadius: 20 },
   headerAvatar: { width: 40, height: 40, borderRadius: 20, marginHorizontal: 12, backgroundColor: '#E0E7FF' },
   headerTextContainer: { flex: 1 },

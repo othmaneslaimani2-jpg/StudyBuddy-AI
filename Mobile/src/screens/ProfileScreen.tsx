@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Switch, Alert } from 'react-native';
+import { AuthContext } from '../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenNavigationProp } from '../types/navigation';
+import apiClient from '../api/client';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Props {
   navigation: ProfileScreenNavigationProp;
 }
 
-const STATS = [
-  { label: 'Completed Tasks', value: '12', icon: 'checkmark-circle-outline', color: '#10B981' },
-  { label: 'Notes Uploaded', value: '5', icon: 'document-text-outline', color: '#3B82F6' },
-  { label: 'Study Streak', value: '3 Days', icon: 'flame-outline', color: '#F59E0B' },
-];
+
 
 const MENU_ITEMS = [
   { label: 'About', icon: 'information-circle-outline' },
@@ -20,12 +19,46 @@ const MENU_ITEMS = [
 ];
 
 export default function ProfileScreen({ navigation }: Props) {
+  const { user, logout } = useContext(AuthContext);
   const [notify, setNotify] = useState(true);
+  const [completedTasksCount, setCompletedTasksCount] = useState(0);
+  const [notesCount, setNotesCount] = useState(0);
+  const [streakCount, setStreakCount] = useState(0);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchData();
+    }, [])
+  );
+
+  const fetchData = async () => {
+    try {
+      const [tasksRes, notesRes] = await Promise.all([
+        apiClient.get('/tasks'),
+        apiClient.get('/notes')
+      ]);
+      const tasks = tasksRes.data || [];
+      const notes = notesRes.data || [];
+      setCompletedTasksCount(tasks.filter((t: any) => t.isCompleted).length);
+      setNotesCount(notes.length);
+      
+      const activityDates = [
+        ...tasks.map((t: any) => new Date(t.createdAt).toDateString()),
+        ...notes.map((n: any) => new Date(n.createdAt).toDateString())
+      ].filter(d => d !== 'Invalid Date');
+      setStreakCount(new Set(activityDates).size);
+    } catch (error) {
+      console.error('Failed to fetch profile stats:', error);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => navigation.replace('Login' as any) }
+      { text: 'Logout', style: 'destructive', onPress: () => {
+          logout();
+        } 
+      }
     ]);
   };
 
@@ -41,7 +74,7 @@ export default function ProfileScreen({ navigation }: Props) {
               <Ionicons name="camera" size={16} color="#FFF" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.userName}>John Doe</Text>
+          <Text style={styles.userName}>{user?.fullName || 'John Doe'}</Text>
           <TouchableOpacity style={styles.editProfileBtn}>
             <Text style={styles.editProfileText}>Edit Profile Info</Text>
           </TouchableOpacity>
@@ -49,13 +82,21 @@ export default function ProfileScreen({ navigation }: Props) {
 
         { }
         <View style={styles.statsContainer}>
-          {STATS.map((stat, idx) => (
-            <View key={idx} style={styles.statCard}>
-              <Ionicons name={stat.icon as any} size={28} color={stat.color} />
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
+          <View style={styles.statCard}>
+            <Ionicons name="checkmark-circle-outline" size={28} color="#10B981" />
+            <Text style={styles.statValue}>{completedTasksCount}</Text>
+            <Text style={styles.statLabel}>Completed Tasks</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Ionicons name="document-text-outline" size={28} color="#3B82F6" />
+            <Text style={styles.statValue}>{notesCount}</Text>
+            <Text style={styles.statLabel}>Notes Uploaded</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Ionicons name="flame-outline" size={28} color="#F59E0B" />
+            <Text style={styles.statValue}>{streakCount} {streakCount === 1 ? 'Day' : 'Days'}</Text>
+            <Text style={styles.statLabel}>Study Streak</Text>
+          </View>
         </View>
 
         { }

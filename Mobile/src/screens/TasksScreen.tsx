@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import Checkbox from 'expo-checkbox';
 import apiClient from '../api/client';
 
-export default function TasksScreen() {
+export default function TasksScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState('all');
   const [tasks, setTasks] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchTasks();
+    }, [])
+  );
 
   const fetchTasks = async () => {
     try {
@@ -19,6 +23,31 @@ export default function TasksScreen() {
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
     }
+  };
+
+  const handleToggleTask = async (id: string, currentStatus: boolean) => {
+    try {
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, isCompleted: !currentStatus } : t));
+      await apiClient.put(`/tasks/${id}`, { isCompleted: !currentStatus });
+    } catch (err) {
+      console.error('Failed to toggle task', err);
+      fetchTasks();
+    }
+  };
+
+  const handleDeleteTask = (id: string) => {
+    Alert.alert('Delete Task', 'Are you sure you want to delete this task?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try {
+          setTasks(prev => prev.filter(t => t.id !== id));
+          await apiClient.delete(`/tasks/${id}`);
+        } catch (err) {
+          console.error('Failed to delete task', err);
+          fetchTasks();
+        }
+      }}
+    ]);
   };
 
   const FilterTab = ({ id, label, count, active }: any) => (
@@ -30,9 +59,14 @@ export default function TasksScreen() {
     </TouchableOpacity>
   );
 
-  const TaskItem = ({ title, subject, subColor, subBg, due, dueColor, dueBg, checked, isCompleted, strike }: any) => (
+  const TaskItem = ({ id, title, subject, subColor, subBg, due, dueColor, dueBg, checked, isCompleted, strike }: any) => (
     <View style={styles.taskItem}>
-      <Checkbox value={checked} style={[styles.checkbox, isCompleted && styles.checkboxCompleted]} color={checked ? (isCompleted ? '#9CA3AF' : '#4F46E5') : undefined} />
+      <Checkbox 
+        value={checked} 
+        onValueChange={() => handleToggleTask(id, isCompleted)}
+        style={[styles.checkbox, isCompleted && styles.checkboxCompleted]} 
+        color={checked ? (isCompleted ? '#9CA3AF' : '#4F46E5') : undefined} 
+      />
       <View style={styles.taskInfo}>
         <Text style={[styles.itemTitle, strike && styles.itemStrike]}>{title}</Text>
         <View style={styles.tagsRow}>
@@ -40,26 +74,26 @@ export default function TasksScreen() {
           <View style={[styles.tag, { backgroundColor: dueBg }]}><Feather name={isCompleted ? "check-circle" : "calendar"} size={12} color={dueColor} style={{marginRight: 4}}/><Text style={[styles.tagText, { color: dueColor }]}>{due}</Text></View>
         </View>
       </View>
-      <TouchableOpacity><Feather name="more-horizontal" size={20} color="#9CA3AF" /></TouchableOpacity>
+      <View style={{ flexDirection: 'row', gap: 16 }}>
+        <TouchableOpacity onPress={() => handleDeleteTask(id)}>
+          <Feather name="trash-2" size={18} color="#EF4444" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.iconBox}><Feather name="calendar" size={24} color="#4F46E5" /></View>
-            <View>
-              <Text style={styles.title}>Study Schedule & Tasks</Text>
-              <Text style={styles.subtitle}>Stay organized and get things done</Text>
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Text style={styles.title} numberOfLines={1}>Study Schedule & Tasks</Text>
+              <Text style={styles.subtitle} numberOfLines={1}>Stay organized and get things done</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.addBtn}>
-            <Feather name="plus" size={16} color="#FFF" />
-            <Text style={styles.addBtnText}>Add Task</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.tabsContainer}>
@@ -82,6 +116,7 @@ export default function TasksScreen() {
           .map(task => (
             <TaskItem 
               key={task.id}
+              id={task.id}
               title={task.title} 
               subject={task.Subject?.title || 'General'} 
               subColor={task.Subject?.color || '#3B82F6'} 
@@ -96,20 +131,22 @@ export default function TasksScreen() {
           ))}
 
       </ScrollView>
-    </View>
+
+      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('AddTask')}>
+        <Feather name="plus" size={24} color="#FFF" />
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
-  scroll: { padding: 20, paddingTop: 60, paddingBottom: 40 },
+  scroll: { padding: 20, paddingTop: 10, paddingBottom: 20 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   iconBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   title: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
   subtitle: { fontSize: 13, color: '#6B7280' },
-  addBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#4F46E5', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12 },
-  addBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 14, marginLeft: 6 },
   tabsContainer: { flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: 20, padding: 4, marginBottom: 24, alignItems: 'center' },
   tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 16 },
   tabActive: { backgroundColor: '#4F46E5' },
@@ -135,4 +172,5 @@ const styles = StyleSheet.create({
   tagsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   tag: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 8 },
   tagText: { fontSize: 11, fontWeight: 'bold' },
+  fab: { position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: '#4F46E5', alignItems: 'center', justifyContent: 'center', shadowColor: '#4F46E5', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
 });

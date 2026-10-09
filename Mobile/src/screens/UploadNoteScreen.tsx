@@ -1,7 +1,9 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import apiClient from '../api/client';
 import { UploadNoteScreenNavigationProp } from '../types/navigation';
 
 interface Props {
@@ -21,6 +23,47 @@ const INFO_BULLETS = [
 ];
 
 export default function UploadNoteScreen({ navigation }: Props) {
+  const [title, setTitle] = useState('');
+  const [subjectName, setSubjectName] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handlePickDocument = async () => {
+    if (!title.trim() || !subjectName.trim()) {
+      return Alert.alert('Validation Error', 'Please enter a title and subject before uploading.');
+    }
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const file = result.assets[0];
+        
+        setLoading(true);
+        // Simulate file reading/uploading for MVP
+        const dummyContent = `This is mock extracted content from the file: ${file.name}.`;
+        
+        try {
+          await apiClient.post('/notes', {
+            title,
+            subject: subjectName,
+            content: dummyContent
+          });
+          Alert.alert('Success', 'Note uploaded successfully!');
+          navigation.goBack();
+        } catch (apiErr) {
+          Alert.alert('Error', 'Failed to upload note to server.');
+          console.error(apiErr);
+        } finally {
+          setLoading(false);
+        }
+      }
+    } catch (err) {
+      console.error('Error picking document:', err);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -42,6 +85,15 @@ export default function UploadNoteScreen({ navigation }: Props) {
           resizeMode="contain"
         />
 
+        <View style={{ width: '100%', marginBottom: 16 }}>
+          <Text style={styles.inputLabel}>Title</Text>
+          <TextInput style={styles.input} placeholder="Note Title" value={title} onChangeText={setTitle} />
+        </View>
+        <View style={{ width: '100%', marginBottom: 24 }}>
+          <Text style={styles.inputLabel}>Subject</Text>
+          <TextInput style={styles.input} placeholder="e.g. Mathematics" value={subjectName} onChangeText={setSubjectName} />
+        </View>
+
         { }
         <View style={styles.uploadContainer}>
           <View style={styles.uploadIconContainer}>
@@ -49,8 +101,8 @@ export default function UploadNoteScreen({ navigation }: Props) {
           </View>
           <Text style={styles.uploadTitle}>Upload Your Note</Text>
           <Text style={styles.uploadSubtitle}>Drag and drop your file here, or tap to browse</Text>
-          <TouchableOpacity style={styles.chooseFileBtn} activeOpacity={0.8}>
-            <Text style={styles.chooseFileText}>Choose File</Text>
+          <TouchableOpacity style={styles.chooseFileBtn} activeOpacity={0.8} onPress={handlePickDocument} disabled={loading}>
+            {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.chooseFileText}>Choose File</Text>}
           </TouchableOpacity>
         </View>
 
@@ -140,8 +192,24 @@ const styles = StyleSheet.create({
   },
   artwork: {
     width: '100%',
-    height: 220,
+    height: 180,
     marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#111827',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
   },
   uploadContainer: {
     width: '100%',
@@ -269,6 +337,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 13,
-    color: '#6B7280',
-  }
+    color: '#4B5563',
+    lineHeight: 20,
+  },
 });

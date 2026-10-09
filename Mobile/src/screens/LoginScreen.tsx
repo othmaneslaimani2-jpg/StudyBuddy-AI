@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { LoginScreenNavigationProp } from '../types/navigation';
 import { CustomInput } from '../components/CustomInput';
@@ -33,7 +34,7 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <AuthHeader subtitle="Your AI-Powered Academic Assistant" />
 
@@ -61,7 +62,7 @@ export default function LoginScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

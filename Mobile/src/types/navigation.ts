@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Tasks: undefined;
   Notes: undefined;
   Profile: undefined;
+  AddTask: undefined;
 };
 
 export type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;

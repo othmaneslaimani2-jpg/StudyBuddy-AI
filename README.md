@@ -1,3 +1,5 @@
+<div align="center">
+
 # 📚 StudyBuddy AI
 
 ### Your intelligent study companion — powered by Gemini AI + Pinecone RAG
@@ -273,49 +275,59 @@ Gemini can interpret the intent, extract the required task information, invoke t
 ## 📂 Project Structure
 
 ```text
-studybuddy-ai/
-├── backend/
+StudyBuddy-AI/
+├── Backend/
+│   ├── config/
+│   │   ├── database.ts
+│   │   └── pinecone.ts
 │   ├── src/
-│   │   ├── config/
-│   │   │   ├── database.js
-│   │   │   └── pinecone.js
 │   │   ├── controllers/
-│   │   │   ├── aiController.js
-│   │   │   ├── authController.js
-│   │   │   ├── noteController.js
-│   │   │   ├── subjectController.js
-│   │   │   └── taskController.js
+│   │   │   ├── aiController.ts
+│   │   │   ├── authController.ts
+│   │   │   ├── noteController.ts
+│   │   │   ├── subjectController.ts
+│   │   │   └── taskController.ts
+│   │   ├── docs/
 │   │   ├── middleware/
-│   │   │   └── auth.js
+│   │   │   └── auth.ts
 │   │   ├── models/
-│   │   │   ├── index.js
-│   │   │   ├── Note.js
-│   │   │   ├── Subject.js
-│   │   │   ├── Task.js
-│   │   │   └── User.js
+│   │   │   ├── index.ts
+│   │   │   ├── Note.ts
+│   │   │   ├── Subject.ts
+│   │   │   ├── Task.ts
+│   │   │   └── User.ts
 │   │   ├── routes/
-│   │   │   ├── aiRoutes.js
-│   │   │   ├── authRoutes.js
-│   │   │   ├── noteRoutes.js
-│   │   │   ├── subjectRoutes.js
-│   │   │   └── taskRoutes.js
-│   │   └── server.js
+│   │   │   ├── aiRoutes.ts
+│   │   │   ├── authRoutes.ts
+│   │   │   ├── noteRoutes.ts
+│   │   │   ├── subjectRoutes.ts
+│   │   │   └── taskRoutes.ts
+│   │   ├── types/
+│   │   └── server.ts
 │   ├── .env
 │   └── package.json
 │
-├── studybuddy-mobile/
+├── Mobile/
 │   ├── src/
 │   │   ├── api/
-│   │   │   └── client.js
+│   │   │   └── client.ts
+│   │   ├── components/
+│   │   │   ├── AuthHeader.tsx
+│   │   │   ├── CustomInput.tsx
+│   │   │   └── GradientButton.tsx
 │   │   ├── context/
-│   │   │   └── AuthContext.js
-│   │   └── screens/
-│   │       ├── HomeScreen.js
-│   │       ├── LoginScreen.js
-│   │       ├── RegisterScreen.js
-│   │       ├── AIChatScreen.js
-│   │       └── UploadNoteScreen.js
-│   ├── App.js
+│   │   │   └── AuthContext.tsx
+│   │   ├── screens/
+│   │   │   ├── AiChatScreen.tsx
+│   │   │   ├── HomeScreen.tsx
+│   │   │   ├── LoginScreen.tsx
+│   │   │   ├── NotesScreen.tsx
+│   │   │   ├── ProfileScreen.tsx
+│   │   │   ├── RegisterScreen.tsx
+│   │   │   ├── TasksScreen.tsx
+│   │   │   └── UploadNoteScreen.tsx
+│   │   └── types/
+│   ├── App.tsx
 │   └── package.json
 │
 ├── assets/
@@ -347,19 +359,19 @@ Before running StudyBuddy AI locally, install or prepare:
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/studybuddy-ai.git
-cd studybuddy-ai
+cd StudyBuddy-AI
 ```
 
 ### 2. Install Backend Dependencies
 
 ```bash
-cd backend
+cd Backend
 npm install
 ```
 
 ### 3. Configure Environment Variables
 
-Create `backend/.env` and configure the values required by your implementation:
+Create `Backend/.env` and configure the values required by your implementation:
 
 ```env
 PORT=5000
@@ -397,13 +409,13 @@ npm start
 Open another terminal:
 
 ```bash
-cd studybuddy-mobile
+cd Mobile
 npm install
 ```
 
 ### 6. Configure the API Client
 
-Point the Axios base URL in `src/api/client.js` to your backend development URL.
+Point the Axios base URL in `src/api/client.ts` to your backend development URL.
 
 ```js
 const api = axios.create({
@@ -564,4 +576,6 @@ This project can be distributed under the **MIT License**. Add a `LICENSE` file 
 Built with **React Native**, **Node.js**, **PostgreSQL**, **Pinecone**, and **Gemini AI**.
 
 ⭐ If you find this project useful, consider starring the repository.
+
+</div>
 

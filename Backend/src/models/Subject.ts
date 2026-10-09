@@ -13,13 +13,13 @@ export interface SubjectAttributes {
 export interface SubjectCreationAttributes extends Optional<SubjectAttributes, 'id' | 'color'> {}
 
 export class Subject extends Model<SubjectAttributes, SubjectCreationAttributes> implements SubjectAttributes {
-  public id!: string;
-  public title!: string;
-  public color!: string;
-  public userId!: string;
+  declare id: string;
+  declare title: string;
+  declare color: string;
+  declare userId: string;
 
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 }
 
 Subject.init(
