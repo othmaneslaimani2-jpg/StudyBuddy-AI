@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import apiClient from '../api/client';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,6 +15,7 @@ export default function AIChatScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [attachedContext, setAttachedContext] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
 
   useFocusEffect(
     useCallback(() => {
@@ -135,7 +136,7 @@ export default function AIChatScreen({ navigation }: any) {
         </View>
       )}
 
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom + 10, 16) }]}>
         <View style={styles.inputRow}>
           <TouchableOpacity style={styles.attachBtn} onPress={handleAttachFile}>
             <Feather name="paperclip" size={20} color="#6B7280" />
