@@ -7,6 +7,9 @@ export interface TaskAttributes {
   dueDate: Date;
   isCompleted?: boolean;
   subjectId?: string;
+  description?: string;
+  priority?: string;
+  reminder?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -19,6 +22,9 @@ export class Task extends Model<TaskAttributes, TaskCreationAttributes> implemen
   declare dueDate: Date;
   declare isCompleted: boolean;
   declare subjectId: string;
+  declare description: string | undefined;
+  declare priority: string | undefined;
+  declare reminder: string | undefined;
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
@@ -46,6 +52,18 @@ Task.init(
     subjectId: {
       type: DataTypes.UUID,
       allowNull: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    priority: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reminder: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {

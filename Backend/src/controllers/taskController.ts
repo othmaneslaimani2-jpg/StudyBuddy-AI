@@ -32,7 +32,7 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized.' });
     }
 
-    const { title, dueDate, subjectId, subject: subjectName } = req.body;
+    const { title, dueDate, subjectId, subject: subjectName, description, priority, reminder } = req.body;
     if (!title || !dueDate || (!subjectId && !subjectName)) {
       return res.status(400).json({ error: 'Title, dueDate, and subject are required.' });
     }
@@ -58,6 +58,9 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       title,
       dueDate: new Date(dueDate),
       subjectId: finalSubjectId,
+      description,
+      priority,
+      reminder,
     });
     return res.status(201).json(task);
   } catch (error) {

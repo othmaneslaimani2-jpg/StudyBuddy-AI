@@ -53,7 +53,7 @@ export default function AddTaskScreen({ navigation }: any) {
     setLoading(true);
     try {
       const dueDateIso = dueDate.toISOString();
-      await apiClient.post('/tasks', { title, dueDate: dueDateIso, subject: subjectName });
+      await apiClient.post('/tasks', { title, dueDate: dueDateIso, subject: subjectName, description, priority, reminder });
       
       navigation.goBack();
     } catch (err) {
