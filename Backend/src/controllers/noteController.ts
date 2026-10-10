@@ -36,43 +36,48 @@ export const createNote = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Subject not found.' });
     }
 
-    const note = await Note.create({ title, content, subjectId: finalSubjectId });
+    let note;
+    try {
+      note = await Note.create({ title, content, subjectId: finalSubjectId });
 
-    const embeddingResponse = await ai.models.embedContent({
-      model: 'gemini-embedding-2',
-      contents: `Title: ${title}\nContent: ${content}`,
-      config: {
-        outputDimensionality: 768
+      const embeddingResponse = await ai.models.embedContent({
+        model: 'gemini-embedding-2',
+        contents: `Title: ${title}\nContent: ${content}`,
+        config: {
+          outputDimensionality: 768
+        }
+      });
+
+      const vectorValues = embeddingResponse.embeddings?.[0]?.values;
+
+      if (!vectorValues) {
+        throw new Error('Failed to generate embedding vector values.');
       }
-    });
 
-    const vectorValues = embeddingResponse.embeddings?.[0]?.values;
-
-    if (!vectorValues) {
-      throw new Error('Failed to generate embedding vector values.');
-    }
-
-    const index = getPineconeIndex();
-    await index.upsert({
-      records: [
-        {
-          id: note.id,
-          values: vectorValues,
-          metadata: {
-            userId,
-            subjectId,
-            title,
-            textChunk: content.substring(0, 1000),
+      const index = getPineconeIndex();
+      await index.upsert({
+        records: [
+          {
+            id: note.id,
+            values: vectorValues,
+            metadata: {
+              userId,
+              subjectId,
+              title,
+              textChunk: content.substring(0, 1000),
+            },
           },
-        },
-      ],
-    });
+        ],
+      });
 
-    return res.status(201).json({ message: 'Note saved and indexed using Gemini successfully!', note });
-  } catch (error) {
-    console.error('Note Upload Error:', error);
-    return res.status(500).json({ error: 'Failed to save and vectorise note.' });
-  }
+      return res.status(201).json({ message: 'Note saved and indexed using Gemini successfully!', note });
+    } catch (error) {
+      console.error('Note Upload Error:', error);
+      if (note) {
+        await note.destroy();
+      }
+      return res.status(500).json({ error: 'Failed to save and vectorise note.' });
+    }
 };
 
 export const getNotes = async (req: AuthRequest, res: Response) => {
@@ -113,7 +118,13 @@ export const deleteNote = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized.' });
     }
 
-    // Ideally delete from Pinecone too, but for MVP we skip it.
+    try {
+      const index = getPineconeIndex();
+      await index.deleteOne(note.id);
+    } catch (pineconeError) {
+      console.error('Failed to delete note from Pinecone:', pineconeError);
+    }
+
     await note.destroy();
     return res.status(204).send();
   } catch (error) {
