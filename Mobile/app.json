@@ -20,8 +20,13 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "scheme": "studybuddy",
     "plugins": [
-      "@react-native-community/datetimepicker"
-    ]
+      "@react-native-community/datetimepicker",
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

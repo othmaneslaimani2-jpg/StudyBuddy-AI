@@ -1,114 +1,152 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AuthContext } from '../context/AuthContext';
-import { RegisterScreenNavigationProp } from '../types/navigation';
+import { useAuthStore } from '../store/authStore';
+import { useRouter } from 'expo-router';
 import Checkbox from 'expo-checkbox';
 import { CustomInput } from '../components/CustomInput';
 import { GradientButton } from '../components/GradientButton';
 import { AuthHeader } from '../components/AuthHeader';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { registerSchema, RegisterFormData } from '../validation/schemas';
 
-interface Props {
-  navigation: RegisterScreenNavigationProp;
-}
-
-export default function RegisterScreen({ navigation }: Props) {
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+export default function RegisterScreen() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [agree, setAgree] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register } = useContext(AuthContext);
+  const register = useAuthStore((state) => state.register);
 
-  const updateForm = (key: keyof typeof form, value: string) => setForm(prev => ({ ...prev, [key]: value }));
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      agree: false,
+    },
+  });
 
-  const handleRegister = async () => {
-    const { name, email, password, confirmPassword } = form;
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Validation Error', 'Please fill all fields');
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert('Validation Error', 'Passwords do not match');
-      return;
-    }
-    if (!agree) {
-      Alert.alert('Validation Error', 'Please agree to the Terms of Service and Privacy Policy');
-      return;
-    }
-
-    setIsSubmitting(true);
+  const onSubmit = async (data: RegisterFormData) => {
     try {
-      await register(name, email, password);
+      await register(data.name, data.email, data.password);
+      router.replace('/');
     } catch (error: any) {
       Alert.alert('Registration Failed', error.response?.data?.error || 'Failed to create account');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
         <AuthHeader subtitle="Create your account" />
 
         <View style={styles.formContainer}>
-          <CustomInput
-            icon="user"
-            placeholder="Full Name"
-            value={form.name}
-            onChangeText={(t) => updateForm('name', t)}
-          />
-          <CustomInput
-            icon="mail"
-            placeholder="your@email.com"
-            value={form.email}
-            onChangeText={(t) => updateForm('email', t)}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <CustomInput
-            icon="lock"
-            placeholder="Password"
-            value={form.password}
-            onChangeText={(t) => updateForm('password', t)}
-            isPassword
-            secureTextEntry={!showPassword}
-            onToggleSecure={() => setShowPassword(!showPassword)}
-          />
-          <CustomInput
-            icon="lock"
-            placeholder="Confirm Password"
-            value={form.confirmPassword}
-            onChangeText={(t) => updateForm('confirmPassword', t)}
-            isPassword
-            secureTextEntry={!showConfirmPassword}
-            onToggleSecure={() => setShowConfirmPassword(!showConfirmPassword)}
+          <Controller
+            control={control}
+            name="name"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <CustomInput
+                icon="user"
+                placeholder="Full Name"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                error={errors.name?.message}
+              />
+            )}
           />
 
-          <View style={styles.checkboxContainer}>
-            <Checkbox
-              value={agree}
-              onValueChange={setAgree}
-              color={agree ? '#3B82F6' : undefined}
-              style={styles.checkbox}
-            />
-            <Text style={styles.checkboxText}>
-              I agree to the <Text style={styles.linkTextInline}>Terms of Service</Text> and <Text style={styles.linkTextInline}>Privacy Policy</Text>
-            </Text>
-          </View>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <CustomInput
+                icon="mail"
+                placeholder="your@email.com"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                error={errors.email?.message}
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <CustomInput
+                icon="lock"
+                placeholder="Password"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                isPassword
+                secureTextEntry={!showPassword}
+                onToggleSecure={() => setShowPassword(!showPassword)}
+                error={errors.password?.message}
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="confirmPassword"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <CustomInput
+                icon="lock"
+                placeholder="Confirm Password"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                isPassword
+                secureTextEntry={!showConfirmPassword}
+                onToggleSecure={() => setShowConfirmPassword(!showConfirmPassword)}
+                error={errors.confirmPassword?.message}
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="agree"
+            render={({ field: { onChange, value } }) => (
+              <View style={styles.checkboxWrapper}>
+                <View style={styles.checkboxContainer}>
+                  <Checkbox
+                    value={value}
+                    onValueChange={onChange}
+                    color={value ? '#3B82F6' : undefined}
+                    style={styles.checkbox}
+                  />
+                  <Text style={styles.checkboxText}>
+                    I agree to the <Text style={styles.linkTextInline}>Terms of Service</Text> and{' '}
+                    <Text style={styles.linkTextInline}>Privacy Policy</Text>
+                  </Text>
+                </View>
+                {errors.agree && <Text style={styles.errorText}>{errors.agree.message}</Text>}
+              </View>
+            )}
+          />
 
           <GradientButton
             title="Create Account"
-            onPress={handleRegister}
+            onPress={handleSubmit(onSubmit)}
             isSubmitting={isSubmitting}
           />
         </View>
 
         <View style={styles.footerContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <TouchableOpacity onPress={() => router.push('/login')}>
             <Text style={styles.footerText}>
               Already have an account? <Text style={styles.footerLink}>Sign In</Text>
             </Text>
@@ -132,11 +170,13 @@ const styles = StyleSheet.create({
   formContainer: {
     width: '100%',
   },
+  checkboxWrapper: {
+    marginBottom: 20,
+    marginTop: 4,
+  },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 4,
     paddingRight: 20,
   },
   checkbox: {
@@ -147,10 +187,19 @@ const styles = StyleSheet.create({
   },
   checkboxText: {
     fontSize: 13,
-    color: '#111827',
+    color: '#4B5563',
+    lineHeight: 18,
+    flex: 1,
   },
   linkTextInline: {
     color: '#2563EB',
+    fontWeight: '500',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   footerContainer: {
     alignItems: 'center',

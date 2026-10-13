@@ -4,69 +4,75 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import apiClient from '../api/client';
+import { useRouter } from 'expo-router';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { addTaskSchema, AddTaskFormData } from '../validation/schemas';
+import { FieldHeader, Dropdown } from '../components';
 
-const FieldHeader = ({ icon, color, bg, label, opt }: any) => (
-  <View style={styles.fieldHeader}>
-    <View style={[styles.iconBox, { backgroundColor: bg }]}><Feather name={icon} size={16} color={color} /></View>
-    <Text style={styles.fieldLabel}>{label} {opt && <Text style={{ color: '#9CA3AF', fontWeight: 'normal' }}>(Optional)</Text>}</Text>
-  </View>
-);
-
-const Dropdown = ({ icon, value, onPress }: any) => (
-  <TouchableOpacity style={styles.dropdown} onPress={onPress}>
-    <Feather name={icon} size={16} color="#111827" />
-    <Text style={styles.dropdownText}>{value}</Text>
-    <Feather name="chevron-down" size={16} color="#6B7280" />
-  </TouchableOpacity>
-);
-
-export default function AddTaskScreen({ navigation }: any) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [subjectName, setSubjectName] = useState('');
-  
-  const [dueDate, setDueDate] = useState(new Date());
+export default function AddTaskScreen() {
+  const router = useRouter();
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const [priority, setPriority] = useState('Medium');
-  const [reminder, setReminder] = useState('1 day before');
-  const [loading, setLoading] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<AddTaskFormData>({
+    resolver: zodResolver(addTaskSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      subjectName: '',
+      dueDate: new Date(),
+      priority: 'Medium',
+      reminder: '1 day before',
+    },
+  });
 
-  const onDateChange = (event: any, selectedDate?: Date) => {
+  const dueDate = watch('dueDate');
+  const description = watch('description') || '';
+  const priority = watch('priority');
+  const reminder = watch('reminder');
+
+  const onDateChange = (_event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') setShowDatePicker(false);
-    if (selectedDate) setDueDate(selectedDate);
+    if (selectedDate) setValue('dueDate', selectedDate, { shouldValidate: true });
   };
 
-  const onTimeChange = (event: any, selectedDate?: Date) => {
+  const onTimeChange = (_event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') setShowTimePicker(false);
-    if (selectedDate) setDueDate(selectedDate);
+    if (selectedDate) setValue('dueDate', selectedDate, { shouldValidate: true });
   };
 
   const dateStr = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const timeStr = dueDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-  const handleCreateTask = async () => {
-    if (!title.trim()) return Alert.alert('Validation Error', 'Task title is required.');
-    if (!subjectName.trim()) return Alert.alert('Validation Error', 'Please enter a subject.');
-    
-    setLoading(true);
+  const onSubmit = async (data: AddTaskFormData) => {
     try {
-      const dueDateIso = dueDate.toISOString();
-      await apiClient.post('/tasks', { title, dueDate: dueDateIso, subject: subjectName, description, priority, reminder });
-      
-      navigation.goBack();
-    } catch (err) {
-      Alert.alert('Error', 'Failed to create task.');
-    } finally {
-      setLoading(false);
+      const dueDateIso = data.dueDate.toISOString();
+      await apiClient.post('/tasks', {
+        title: data.title,
+        dueDate: dueDateIso,
+        subject: data.subjectName,
+        description: data.description,
+        priority: data.priority,
+        reminder: data.reminder,
+      });
+
+      router.back();
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.error || 'Failed to create task.');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}><Feather name="chevron-left" size={24} color="#111827" /></TouchableOpacity>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}><Feather name="chevron-left" size={24} color="#111827" /></TouchableOpacity>
         <View style={styles.headerTextContainer}>
           <Text style={styles.headerTitle}>Add Task</Text>
           <Text style={styles.headerSubtitle}>Create a new task for your study plan</Text>
@@ -80,18 +86,63 @@ export default function AddTaskScreen({ navigation }: any) {
 
           <View style={styles.card}>
             <FieldHeader icon="file" color="#4F46E5" bg="#EEF2FF" label="Task Title" />
-            <TextInput style={styles.input} placeholder="e.g. Read Chapter 3" placeholderTextColor="#9CA3AF" value={title} onChangeText={setTitle} />
+            <Controller
+              control={control}
+              name="title"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.input, !!errors.title && styles.inputError]}
+                  placeholder="e.g. Read Chapter 3"
+                  placeholderTextColor="#9CA3AF"
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                />
+              )}
+            />
+            {errors.title && <Text style={styles.errorText}>{errors.title.message}</Text>}
           </View>
 
           <View style={styles.card}>
             <FieldHeader icon="list" color="#9333EA" bg="#F3E8FF" label="Description" opt />
-            <TextInput style={[styles.input, styles.textArea]} placeholder="Add more details about this task..." placeholderTextColor="#9CA3AF" multiline numberOfLines={4} maxLength={200} value={description} onChangeText={setDescription} />
+            <Controller
+              control={control}
+              name="description"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.input, styles.textArea, !!errors.description && styles.inputError]}
+                  placeholder="Add more details about this task..."
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                  numberOfLines={4}
+                  maxLength={200}
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                />
+              )}
+            />
             <Text style={styles.charCount}>{description.length}/200</Text>
+            {errors.description && <Text style={styles.errorText}>{errors.description.message}</Text>}
           </View>
 
           <View style={styles.card}>
             <FieldHeader icon="book-open" color="#2563EB" bg="#DBEAFE" label="Subject" />
-            <TextInput style={styles.input} placeholder="e.g. Mathematics" placeholderTextColor="#9CA3AF" value={subjectName} onChangeText={setSubjectName} />
+            <Controller
+              control={control}
+              name="subjectName"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.input, !!errors.subjectName && styles.inputError]}
+                  placeholder="e.g. Mathematics"
+                  placeholderTextColor="#9CA3AF"
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                />
+              )}
+            />
+            {errors.subjectName && <Text style={styles.errorText}>{errors.subjectName.message}</Text>}
           </View>
 
           <View style={styles.row}>
@@ -131,11 +182,19 @@ export default function AddTaskScreen({ navigation }: any) {
             <FieldHeader icon="flag" color="#EA580C" bg="#FFEDD5" label="Priority" />
             <View style={styles.priorityRow}>
               {[
-                { p: 'Low', bg: '#D1FAE5', txt: '#059669', ic: '#059669', base: '#F9FAFB', bd: '#10B981' },
-                { p: 'Medium', bg: '#FFEDD5', txt: '#EA580C', ic: '#EA580C', base: '#F9FAFB', bd: '#F97316' },
-                { p: 'High', bg: '#FEE2E2', txt: '#DC2626', ic: '#DC2626', base: '#F9FAFB', bd: '#EF4444' }
+                { p: 'Low' as const, bg: '#D1FAE5', txt: '#059669', ic: '#059669', base: '#F9FAFB', bd: '#10B981' },
+                { p: 'Medium' as const, bg: '#FFEDD5', txt: '#EA580C', ic: '#EA580C', base: '#F9FAFB', bd: '#F97316' },
+                { p: 'High' as const, bg: '#FEE2E2', txt: '#DC2626', ic: '#DC2626', base: '#F9FAFB', bd: '#EF4444' }
               ].map(({ p, bg, txt, ic, base, bd }) => (
-                <TouchableOpacity key={p} style={[styles.priorityPill, { backgroundColor: priority === p ? bg : base }, priority === p && bd && { borderWidth: 1, borderColor: bd }]} onPress={() => setPriority(p)}>
+                <TouchableOpacity
+                  key={p}
+                  style={[
+                    styles.priorityPill,
+                    { backgroundColor: priority === p ? bg : base },
+                    priority === p && bd && { borderWidth: 1, borderColor: bd }
+                  ]}
+                  onPress={() => setValue('priority', p, { shouldValidate: true })}
+                >
                   <Feather name="flag" size={14} color={priority === p ? ic : '#9CA3AF'} style={{ marginRight: 6 }} />
                   <Text style={{ fontSize: 13, fontWeight: '600', color: priority === p ? txt : '#6B7280' }}>{p}</Text>
                 </TouchableOpacity>
@@ -152,8 +211,8 @@ export default function AddTaskScreen({ navigation }: any) {
       </KeyboardAvoidingView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.submitBtn} onPress={handleCreateTask} disabled={loading}>
-          {loading ? <ActivityIndicator color="#FFF" /> : (
+        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
+          {isSubmitting ? <ActivityIndicator color="#FFF" /> : (
             <>
               <Feather name="plus-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
               <Text style={styles.submitBtnText}>Create Task</Text>
@@ -177,16 +236,13 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#FFF', borderRadius: 16, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.02, shadowRadius: 8, elevation: 1 },
   halfCard: { flex: 1 },
   row: { flexDirection: 'row', gap: 12 },
-  fieldHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  iconBox: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  fieldLabel: { fontSize: 15, fontWeight: '700', color: '#111827' },
   input: { backgroundColor: '#F9FAFB', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, color: '#111827', borderWidth: 1, borderColor: '#F3F4F6' },
+  inputError: { borderColor: '#EF4444' },
+  errorText: { color: '#EF4444', fontSize: 12, marginTop: 6, marginLeft: 4 },
   textArea: { height: 100, textAlignVertical: 'top' },
   charCount: { textAlign: 'right', fontSize: 11, color: '#9CA3AF', marginTop: 6 },
   subjectScroll: { flexDirection: 'row' },
   pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, marginRight: 8 },
-  dropdown: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: '#F3F4F6' },
-  dropdownText: { flex: 1, fontSize: 14, color: '#111827', marginLeft: 10 },
   priorityRow: { flexDirection: 'row', justifyContent: 'space-between' },
   priorityPill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, marginHorizontal: 4 },
   footer: { padding: 16, paddingBottom: 24, backgroundColor: '#FAFAFF' },

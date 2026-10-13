@@ -1,35 +1,40 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AuthContext } from '../context/AuthContext';
-import { LoginScreenNavigationProp } from '../types/navigation';
+import { useAuthStore } from '../store/authStore';
+import { useRouter } from 'expo-router';
 import { CustomInput } from '../components/CustomInput';
 import { GradientButton } from '../components/GradientButton';
 import { AuthHeader } from '../components/AuthHeader';
 import Checkbox from 'expo-checkbox';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, LoginFormData } from '../validation/schemas';
 
-interface Props {
-  navigation: LoginScreenNavigationProp;
-}
-
-export default function LoginScreen({ navigation }: Props) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function LoginScreen() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const { login } = useContext(AuthContext);
+  const login = useAuthStore((state) => state.login);
 
-  const handleLogin = async () => {
-    if (!email || !password) return Alert.alert('Validation Error', 'Please enter email and password');
-    setIsSubmitting(true);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+    },
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(email, password);
+      await login(data.email, data.password);
+      router.replace('/');
     } catch (error: any) {
       Alert.alert('Login Failed', error.response?.data?.error || 'Invalid credential');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -39,25 +44,62 @@ export default function LoginScreen({ navigation }: Props) {
         <AuthHeader subtitle="Your AI-Powered Academic Assistant" />
 
         <View style={styles.formContainer}>
-          <CustomInput 
-            icon="mail" placeholder="your@email.com" value={email} onChangeText={setEmail} 
-            autoCapitalize="none" keyboardType="email-address" 
-          />
-          <CustomInput 
-            icon="lock" placeholder="Password" value={password} onChangeText={setPassword} 
-            isPassword secureTextEntry={!showPassword} onToggleSecure={() => setShowPassword(!showPassword)} 
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <CustomInput
+                icon="mail"
+                placeholder="your@email.com"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                error={errors.email?.message}
+              />
+            )}
           />
 
-          <View style={styles.optionsContainer}>
-            <Checkbox value={rememberMe} onValueChange={setRememberMe} color={rememberMe ? '#3B82F6' : undefined} style={styles.checkbox} />
-            <Text style={styles.checkboxText}>Remember me</Text>
-          </View>
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <CustomInput
+                icon="lock"
+                placeholder="Password"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                isPassword
+                secureTextEntry={!showPassword}
+                onToggleSecure={() => setShowPassword(!showPassword)}
+                error={errors.password?.message}
+              />
+            )}
+          />
 
-          <GradientButton title="Sign In" onPress={handleLogin} isSubmitting={isSubmitting} />
+          <Controller
+            control={control}
+            name="rememberMe"
+            render={({ field: { onChange, value } }) => (
+              <View style={styles.optionsContainer}>
+                <Checkbox
+                  value={value}
+                  onValueChange={onChange}
+                  color={value ? '#3B82F6' : undefined}
+                  style={styles.checkbox}
+                />
+                <Text style={styles.checkboxText}>Remember me</Text>
+              </View>
+            )}
+          />
+
+          <GradientButton title="Sign In" onPress={handleSubmit(onSubmit)} isSubmitting={isSubmitting} />
         </View>
 
         <View style={styles.footerContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+          <TouchableOpacity onPress={() => router.push('/register')}>
             <Text style={styles.footerText}>Don't have an account? <Text style={styles.footerLink}>Sign Up</Text></Text>
           </TouchableOpacity>
         </View>

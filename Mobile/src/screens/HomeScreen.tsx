@@ -1,13 +1,17 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AuthContext } from '../context/AuthContext';
+import { useAuthStore } from '../store/authStore';
 import { Feather } from '@expo/vector-icons';
 import Checkbox from 'expo-checkbox';
 import apiClient from '../api/client';
+import { useRouter } from 'expo-router';
+import { StatCard } from '../components';
 
-export default function HomeScreen({ navigation }: any) {
-  const { logout, user } = useContext(AuthContext);
+export default function HomeScreen() {
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const [tasks, setTasks] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
 
@@ -36,25 +40,12 @@ export default function HomeScreen({ navigation }: any) {
     }
   };
 
-  const StatCard = ({ title, count, sub, icon, color, bg, iconBg }: any) => (
-    <View style={[styles.statCard, { backgroundColor: bg }]}>
-      <View style={[styles.statIconBox, { backgroundColor: iconBg }]}>
-        <Feather name={icon} size={20} color={color} />
-      </View>
-      <Text style={styles.statTitle}>{title}</Text>
-      <Text style={styles.statCount}>{count}</Text>
-      <View style={styles.statFooter}>
-        <Text style={styles.statSub}>{sub}</Text>
-      </View>
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         <View style={styles.header}>
-          <TouchableOpacity style={styles.avatarContainer} onPress={() => navigation.navigate('Profile')}>
+          <TouchableOpacity style={styles.avatarContainer} onPress={() => router.push('/profile')}>
             <Image source={require('../../assets/icon.png')} style={styles.avatar} />
             <View style={styles.statusDot} />
           </TouchableOpacity>
@@ -74,7 +65,7 @@ export default function HomeScreen({ navigation }: any) {
           <StatCard title="Indexed Notes" count={notes.length.toString()} sub="In Pinecone" icon="file-text" color="#10B981" bg="#ECFDF5" iconBg="#A7F3D0" />
         </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('AIChat')} style={styles.bannerContainer}>
+        <TouchableOpacity onPress={() => router.push('/ai-chat')} style={styles.bannerContainer}>
           <ImageBackground source={require('../../assets/card.png')} style={styles.bannerImage} resizeMode="stretch">
             <View style={styles.bannerContent}>
               <Text style={styles.bannerTitle}>Ask Study Buddy AI</Text>
@@ -164,14 +155,7 @@ const styles = StyleSheet.create({
   bellDot: { position: 'absolute', top: 10, right: 12, width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444' },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEE2E2', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 },
   logoutText: { color: '#EF4444', fontWeight: 'bold', fontSize: 13, marginLeft: 6 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  statCard: { flex: 0.48, padding: 16, borderRadius: 20 },
-  statIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  statTitle: { fontSize: 14, color: '#1F2937', fontWeight: '500' },
-  statCount: { fontSize: 32, fontWeight: 'bold', color: '#111827', marginVertical: 4 },
-  statFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  statSub: { fontSize: 13, color: '#6B7280' },
-  statArrow: { backgroundColor: '#FFF', borderRadius: 10, overflow: 'hidden' },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, gap: 12 },
   bannerContainer: { height: 160, marginBottom: 20, marginHorizontal: -12, borderRadius: 20, overflow: 'hidden' },
   bannerImage: { width: '100%', height: '100%', paddingHorizontal: 0, paddingVertical: 10, flexDirection: 'row' },
   bannerContent: { flex: 1, justifyContent: 'center', paddingLeft: 15,  },

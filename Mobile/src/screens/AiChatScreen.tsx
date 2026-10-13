@@ -4,12 +4,13 @@ import { Feather } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import apiClient from '../api/client';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Message { id: string; sender: 'ai' | 'user'; text: string; actionExecuted?: boolean; }
 
-export default function AIChatScreen({ navigation }: any) {
+export default function AIChatScreen() {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([{ id: '1', sender: 'ai', text: 'Hello! I am your StudyBuddy AI Tutor. Ask me anything about your notes or tell me to schedule a task!' }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -88,7 +89,7 @@ export default function AIChatScreen({ navigation }: any) {
                 </View>
                 <Feather name="calendar" size={20} color="#10B981" />
               </View>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Tasks')}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/tasks')}>
                 <Text style={styles.actionBtnText}>View in Tasks</Text>
                 <Feather name="arrow-right" size={16} color="#4F46E5" />
               </TouchableOpacity>
@@ -109,7 +110,7 @@ export default function AIChatScreen({ navigation }: any) {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.header}>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation?.goBack()}><Feather name="chevron-left" size={24} color="#111827" /></TouchableOpacity>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}><Feather name="chevron-left" size={24} color="#111827" /></TouchableOpacity>
         <Image source={require('../../assets/bot.png')} style={styles.headerAvatar} />
         <View style={styles.headerTextContainer}>
           <Text style={styles.headerTitle}>StudyBuddy AI Assistant</Text>

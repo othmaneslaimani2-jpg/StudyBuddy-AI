@@ -11,7 +11,7 @@ import { apiReference } from '@scalar/express-api-reference';
 import { openApiSpec } from './docs/openapi';
 
 dotenv.config();
-
+// instance app express 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
@@ -32,14 +32,7 @@ app.use(
   })
 );
 
-app.use(
-  '/reference',
-  apiReference({
-    spec: {
-      content: openApiSpec,
-    },
-  })
-);
+
 
 
 app.use('/api/auth', authRoutes);
@@ -48,16 +41,12 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/ai', aiRoutes);
 
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 async function startServer() {
   try {
     await sequelize.authenticate();
     console.log('Database connected successfully.');
 
-    
+
     await sequelize.sync({ alter: true });
     console.log('Database synchronized.');
 

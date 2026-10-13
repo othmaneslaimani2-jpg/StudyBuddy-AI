@@ -4,11 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import apiClient from '../api/client';
-import { UploadNoteScreenNavigationProp } from '../types/navigation';
-
-interface Props {
-  navigation: UploadNoteScreenNavigationProp;
-}
+import { useRouter } from 'expo-router';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { uploadNoteSchema, UploadNoteFormData } from '../validation/schemas';
 
 const FORMATS = [
   { label: 'PDF', bg: '#F43F5E', isText: true },
@@ -22,16 +21,23 @@ const INFO_BULLETS = [
   'Supports handwritten or typed notes',
 ];
 
-export default function UploadNoteScreen({ navigation }: Props) {
-  const [title, setTitle] = useState('');
-  const [subjectName, setSubjectName] = useState('');
+export default function UploadNoteScreen() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const handlePickDocument = async () => {
-    if (!title.trim() || !subjectName.trim()) {
-      return Alert.alert('Validation Error', 'Please enter a title and subject before uploading.');
-    }
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<UploadNoteFormData>({
+    resolver: zodResolver(uploadNoteSchema),
+    defaultValues: {
+      title: '',
+      subjectName: '',
+    },
+  });
 
+  const onValidSubmit = async (data: UploadNoteFormData) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: '*/*',
@@ -46,12 +52,12 @@ export default function UploadNoteScreen({ navigation }: Props) {
         
         try {
           await apiClient.post('/notes', {
-            title,
-            subject: subjectName,
+            title: data.title,
+            subject: data.subjectName,
             content: dummyContent
           });
           Alert.alert('Success', 'Note uploaded successfully!');
-          navigation.goBack();
+          router.back();
         } catch (apiErr) {
           Alert.alert('Error', 'Failed to upload note to server.');
           console.error(apiErr);
@@ -69,7 +75,7 @@ export default function UploadNoteScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         { }
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={24} color="#111827" />
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
@@ -87,11 +93,40 @@ export default function UploadNoteScreen({ navigation }: Props) {
 
         <View style={{ width: '100%', marginBottom: 16 }}>
           <Text style={styles.inputLabel}>Title</Text>
-          <TextInput style={styles.input} placeholder="Note Title" value={title} onChangeText={setTitle} />
+          <Controller
+            control={control}
+            name="title"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, !!errors.title && styles.inputError]}
+                placeholder="Note Title"
+                placeholderTextColor="#9CA3AF"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+              />
+            )}
+          />
+          {errors.title && <Text style={styles.errorText}>{errors.title.message}</Text>}
         </View>
+
         <View style={{ width: '100%', marginBottom: 24 }}>
           <Text style={styles.inputLabel}>Subject</Text>
-          <TextInput style={styles.input} placeholder="e.g. Mathematics" value={subjectName} onChangeText={setSubjectName} />
+          <Controller
+            control={control}
+            name="subjectName"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, !!errors.subjectName && styles.inputError]}
+                placeholder="e.g. Mathematics"
+                placeholderTextColor="#9CA3AF"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+              />
+            )}
+          />
+          {errors.subjectName && <Text style={styles.errorText}>{errors.subjectName.message}</Text>}
         </View>
 
         { }
@@ -101,7 +136,7 @@ export default function UploadNoteScreen({ navigation }: Props) {
           </View>
           <Text style={styles.uploadTitle}>Upload Your Note</Text>
           <Text style={styles.uploadSubtitle}>Drag and drop your file here, or tap to browse</Text>
-          <TouchableOpacity style={styles.chooseFileBtn} activeOpacity={0.8} onPress={handlePickDocument} disabled={loading}>
+          <TouchableOpacity style={styles.chooseFileBtn} activeOpacity={0.8} onPress={handleSubmit(onValidSubmit)} disabled={loading}>
             {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.chooseFileText}>Choose File</Text>}
           </TouchableOpacity>
         </View>
@@ -210,6 +245,15 @@ const styles = StyleSheet.create({
     color: '#111827',
     borderWidth: 1,
     borderColor: '#C7D2FE',
+  },
+  inputError: {
+    borderColor: '#EF4444',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   uploadContainer: {
     width: '100%',

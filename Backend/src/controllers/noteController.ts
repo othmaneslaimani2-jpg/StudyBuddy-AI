@@ -78,6 +78,10 @@ export const createNote = async (req: AuthRequest, res: Response) => {
       }
       return res.status(500).json({ error: 'Failed to save and vectorise note.' });
     }
+  } catch (error) {
+    console.error('Create Note Error:', error);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
 };
 
 export const getNotes = async (req: AuthRequest, res: Response) => {
@@ -120,7 +124,7 @@ export const deleteNote = async (req: AuthRequest, res: Response) => {
 
     try {
       const index = getPineconeIndex();
-      await index.deleteOne(note.id);
+      await index.deleteOne({ id: note.id });
     } catch (pineconeError) {
       console.error('Failed to delete note from Pinecone:', pineconeError);
     }

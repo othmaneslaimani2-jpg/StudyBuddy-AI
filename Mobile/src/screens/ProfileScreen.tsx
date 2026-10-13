@@ -1,18 +1,15 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Switch, Alert, Modal, TextInput } from 'react-native';
-import { AuthContext } from '../context/AuthContext';
+import { useAuthStore } from '../store/authStore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { ProfileScreenNavigationProp } from '../types/navigation';
 import apiClient from '../api/client';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface Props {
-  navigation: ProfileScreenNavigationProp;
-}
-
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { editProfileSchema, EditProfileFormData } from '../validation/schemas';
 
 
 const MENU_ITEMS = [
@@ -20,15 +17,29 @@ const MENU_ITEMS = [
   { label: 'FAQ', icon: 'help-circle-outline' },
 ];
 
-export default function ProfileScreen({ navigation }: Props) {
-  const { user, logout, updateUser } = useContext(AuthContext);
+export default function ProfileScreen() {
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const updateUser = useAuthStore((state) => state.updateUser);
   const [notify, setNotify] = useState(true);
   const [completedTasksCount, setCompletedTasksCount] = useState(0);
   const [notesCount, setNotesCount] = useState(0);
   const [streakCount, setStreakCount] = useState(0);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editName, setEditName] = useState(user?.fullName || '');
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<EditProfileFormData>({
+    resolver: zodResolver(editProfileSchema),
+    defaultValues: {
+      fullName: user?.fullName || '',
+    },
+  });
 
   useFocusEffect(
     React.useCallback(() => {
@@ -94,10 +105,9 @@ export default function ProfileScreen({ navigation }: Props) {
     }
   };
 
-  const handleUpdateProfile = async () => {
-    if (!editName.trim()) return;
+  const handleUpdateProfile = async (data: EditProfileFormData) => {
     try {
-      const res = await apiClient.put('/auth/profile', { fullName: editName });
+      const res = await apiClient.put('/auth/profile', { fullName: data.fullName });
       await updateUser(res.data.user);
       setEditModalVisible(false);
       Alert.alert('Success', 'Profile updated successfully!');
@@ -131,7 +141,7 @@ export default function ProfileScreen({ navigation }: Props) {
           </View>
           <Text style={styles.userName}>{user?.fullName || 'John Doe'}</Text>
           <TouchableOpacity style={styles.editProfileBtn} onPress={() => {
-            setEditName(user?.fullName || '');
+            setValue('fullName', user?.fullName || '');
             setEditModalVisible(true);
           }}>
             <Text style={styles.editProfileText}>Edit Profile Info</Text>
@@ -190,19 +200,27 @@ export default function ProfileScreen({ navigation }: Props) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Profile</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={editName}
-              onChangeText={setEditName}
-              placeholder="Full Name"
-              autoCapitalize="words"
+            <Controller
+              control={control}
+              name="fullName"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.modalInput, !!errors.fullName && styles.modalInputError]}
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  placeholder="Full Name"
+                  autoCapitalize="words"
+                />
+              )}
             />
+            {errors.fullName && <Text style={styles.errorText}>{errors.fullName.message}</Text>}
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setEditModalVisible(false)}>
                 <Text style={styles.modalBtnCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalBtnSave} onPress={handleUpdateProfile}>
-                <Text style={styles.modalBtnSaveText}>Save</Text>
+              <TouchableOpacity style={styles.modalBtnSave} onPress={handleSubmit(handleUpdateProfile)} disabled={isSubmitting}>
+                <Text style={styles.modalBtnSaveText}>{isSubmitting ? 'Saving...' : 'Save'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -237,7 +255,9 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '80%', backgroundColor: '#FFF', borderRadius: 16, padding: 20 },
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 16 },
-  modalInput: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, fontSize: 16, marginBottom: 20 },
+  modalInput: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, fontSize: 16, marginBottom: 16 },
+  modalInputError: { borderColor: '#EF4444' },
+  errorText: { color: '#EF4444', fontSize: 12, marginTop: -10, marginBottom: 12, marginLeft: 2 },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end' },
   modalBtnCancel: { padding: 10, marginRight: 10 },
   modalBtnCancelText: { color: '#6B7280', fontSize: 15, fontWeight: '600' },
