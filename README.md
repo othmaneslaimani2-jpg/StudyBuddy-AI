@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./Mobile/assets/logoheader.png" alt="StudyBuddy AI assistant" width="250" />
+<img src="./Mobile/assets/bot.png" alt="StudyBuddy AI assistant" width="116" />
 
 # StudyBuddy AI
 
